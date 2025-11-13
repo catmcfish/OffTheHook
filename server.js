@@ -448,7 +448,8 @@ expressApp.get('/health', async (req, res) => {
     
     try {
         // Test Firestore connectivity with a simple read
-        const testRef = db.collection('_health').doc('test');
+        // Use a collection that might exist (users) or create a test doc
+        const testRef = db.collection('users').limit(1);
         await testRef.get();
         health.firestore = 'connected';
         res.json(health);
@@ -456,6 +457,15 @@ expressApp.get('/health', async (req, res) => {
         health.status = 'degraded';
         health.firestore = 'error';
         health.firestoreError = error.message;
+        health.firestoreErrorCode = error.code;
+        
+        // Provide helpful error messages
+        if (error.code === 5 || error.message.includes('NOT_FOUND')) {
+            health.help = 'Firestore database not created. Create it in Firebase Console: https://console.firebase.google.com/';
+        } else if (error.code === 7 || error.message.includes('PERMISSION_DENIED')) {
+            health.help = 'Firestore API not enabled or permissions missing. Enable API and check service account permissions.';
+        }
+        
         res.status(503).json(health);
     }
 });

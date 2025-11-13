@@ -5,7 +5,8 @@ firebase-admin-key.json
 .DS_Store
 public/config.js.bak
 
+CREATE_FIRESTORE_DB.md
+ENABLE_APIS.md
 ERROR_HANDLING.md
 FIREBASE_SETUP.md
-SETUP_SUMMARY.md
-DEPLOYMENT.md
+
