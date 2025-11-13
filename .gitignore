@@ -6,3 +6,6 @@ firebase-admin-key.json
 public/config.js.bak
 
 ERROR_HANDLING.md
+FIREBASE_SETUP.md
+SETUP_SUMMARY.md
+DEPLOYMENT.md
