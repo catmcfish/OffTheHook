@@ -8,9 +8,19 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install --omit=dev
 
-# Copy application files
+# Copy server file
 COPY server.js ./
-COPY public ./public
+
+# Copy frontend files (from root, which are in git)
+COPY index.html game.js style.css ./
+
+# Create public directory and copy files
+RUN mkdir -p public && \
+    cp index.html game.js style.css public/ && \
+    echo 'const API_BASE_URL = window.location.origin;' > public/config.js
+
+# Verify files are copied
+RUN ls -la public/
 
 # Expose port
 EXPOSE 8080
