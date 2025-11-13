@@ -278,10 +278,28 @@ expressApp.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
-// Serve static files (for production)
-if (process.env.NODE_ENV === 'production') {
-    expressApp.use(express.static('public'));
-}
+// Explicitly serve index.html at root
+expressApp.get('/', (req, res) => {
+    res.sendFile('index.html', { root: 'public' });
+});
+
+// Serve static files (CSS, JS, images, etc.)
+expressApp.use(express.static('public'));
+
+// Serve index.html for all non-API routes (SPA routing)
+expressApp.get('*', (req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api')) {
+        return next();
+    }
+    // Serve index.html for all other routes
+    res.sendFile('index.html', { root: 'public' }, (err) => {
+        if (err) {
+            console.error('Error serving index.html:', err);
+            res.status(500).send('Error loading page');
+        }
+    });
+});
 
 expressApp.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
