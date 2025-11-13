@@ -5,6 +5,9 @@ const crypto = require('crypto');
 const fs = require('fs');
 
 // Initialize Firebase Admin with better error handling
+// Firebase project ID - set explicitly to match Firebase project
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'offthehook-70d8a';
+
 let db;
 try {
     if (admin.apps.length === 0) {
@@ -14,23 +17,28 @@ try {
             console.log('Loading Firebase credentials from:', credsPath);
             const serviceAccount = require(credsPath);
             admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
+                credential: admin.credential.cert(serviceAccount),
+                projectId: FIREBASE_PROJECT_ID
             });
-            console.log('Firebase initialized with service account file');
+            console.log(`Firebase initialized with service account file for project: ${FIREBASE_PROJECT_ID}`);
         } else {
             // Use default credentials (works on Cloud Run with service account)
-            console.log('Initializing Firebase with default credentials (Cloud Run service account)');
-            admin.initializeApp();
+            // Explicitly set project ID to match Firebase project
+            console.log(`Initializing Firebase with default credentials for project: ${FIREBASE_PROJECT_ID}`);
+            admin.initializeApp({
+                projectId: FIREBASE_PROJECT_ID
+            });
         }
     }
     db = admin.firestore();
-    console.log('Firestore database initialized successfully');
+    console.log(`Firestore database initialized successfully for project: ${FIREBASE_PROJECT_ID}`);
 } catch (error) {
     console.error('FATAL: Failed to initialize Firebase Admin:', error);
     console.error('Error details:', {
         message: error.message,
         code: error.code,
-        stack: error.stack
+        stack: error.stack,
+        projectId: FIREBASE_PROJECT_ID
     });
     // Don't exit - let the server start so we can return proper error messages
 }

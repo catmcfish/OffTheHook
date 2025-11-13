@@ -23,6 +23,8 @@ steps:
       - '--allow-unauthenticated'
       - '--set-secrets'
       - 'GOOGLE_APPLICATION_CREDENTIALS=firebase-admin-key:latest'
+      - '--set-env-vars'
+      - 'FIREBASE_PROJECT_ID=offthehook-70d8a'
       - '--memory'
       - '512Mi'
       - '--cpu'
