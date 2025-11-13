@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Bit Fishing Adventure</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-area">
+            <canvas id="gameCanvas"></canvas>
+            
+            <!-- Transparent cast button at top -->
+            <button id="cast-button-top" class="cast-button-top">Cast</button>
+            
+            <!-- Backpack icon -->
+            <button id="backpack-button" class="backpack-button">🎒</button>
+            
+            <!-- QTE Overlay -->
+            <div id="qte-overlay" class="qte-overlay hidden">
+                <div class="qte-instruction" id="qte-instruction">Press the button!</div>
+                <div class="qte-button-container">
+                    <button id="qte-button" class="qte-button">⚡</button>
+                </div>
+                <div class="qte-timer">
+                    <div id="qte-timer-bar" class="qte-timer-bar"></div>
+                </div>
+            </div>
+            
+            <!-- Backpack overlay -->
+            <div id="backpack-overlay" class="backpack-overlay hidden">
+                <div class="backpack-content">
+                    <div class="backpack-header">
+                        <h2>Your Catch</h2>
+                        <button id="backpack-close" class="backpack-close">×</button>
+                    </div>
+                    <div class="backpack-stats">
+                        <div class="stat">
+                            <span class="stat-label">Gold:</span>
+                            <span id="gold">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Fish Caught:</span>
+                            <span id="fish-count">0</span>
+                        </div>
+                    </div>
+                    <div id="backpack-list" class="backpack-list"></div>
+                </div>
+            </div>
+            
+            <!-- Fish caught notification -->
+            <div class="fish-info hidden" id="fish-info">
+                <h3>Fish Caught!</h3>
+                <div id="fish-details"></div>
+                <button id="continue-button" class="action-button">Continue</button>
+            </div>
+            
+            <!-- Login/Register Overlay -->
+            <div id="auth-overlay" class="auth-overlay">
+                <div class="auth-content">
+                    <h2>8-Bit Fishing Adventure</h2>
+                    <div id="auth-forms">
+                        <!-- Login Form -->
+                        <div id="login-form" class="auth-form">
+                            <h3>Login</h3>
+                            <input type="text" id="login-username" placeholder="Username" class="auth-input" />
+                            <input type="password" id="login-password" placeholder="Password" class="auth-input" />
+                            <button id="login-button" class="action-button">Login</button>
+                            <p class="auth-switch">Don't have an account? <a href="#" id="show-register">Register</a></p>
+                        </div>
+                        
+                        <!-- Register Form -->
+                        <div id="register-form" class="auth-form hidden">
+                            <h3>Register</h3>
+                            <input type="text" id="register-username" placeholder="Username" class="auth-input" />
+                            <input type="password" id="register-password" placeholder="Password" class="auth-input" />
+                            <input type="password" id="register-password-confirm" placeholder="Confirm Password" class="auth-input" />
+                            <button id="register-button" class="action-button">Register</button>
+                            <p class="auth-switch">Already have an account? <a href="#" id="show-login">Login</a></p>
+                        </div>
+                    </div>
+                    <div id="auth-error" class="auth-error hidden"></div>
+                </div>
+            </div>
+            
+            <!-- Leaderboard Overlay -->
+            <div id="leaderboard-overlay" class="backpack-overlay hidden">
+                <div class="backpack-content">
+                    <div class="backpack-header">
+                        <h2>🏆 Leaderboard</h2>
+                        <button id="leaderboard-close" class="backpack-close">×</button>
+                    </div>
+                    <div id="leaderboard-list" class="leaderboard-list"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Leaderboard button -->
+        <button id="leaderboard-button" class="leaderboard-button">🏆</button>
+    </div>
+    
+    <script src="config.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
+

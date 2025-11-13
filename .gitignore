@@ -1,0 +1,7 @@
+node_modules/
+firebase-admin-key.json
+.env
+*.log
+.DS_Store
+public/config.js.bak
+
