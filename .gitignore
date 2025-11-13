@@ -5,3 +5,4 @@ firebase-admin-key.json
 .DS_Store
 public/config.js.bak
 
+ERROR_HANDLING.md
