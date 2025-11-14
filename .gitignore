@@ -5,3 +5,9 @@ firebase-admin-key.json
 .DS_Store
 public/config.js.bak
 
+AGENT_INSTRUCTIONS.md
+DEPLOYMENT.md
+DEVELOPMENT.md
+QUICK_REFERENCE.md
+js/README.md
+public/README.md
