@@ -316,12 +316,28 @@ function draw() {
     ctx.fillStyle = skyGradient;
     ctx.fillRect(0, 0, canvas.width, skyHeight);
     
+    // Always update frame time for consistent timing
+    const now = Date.now();
+    let deltaTime = (now - lastFrameTime) / 16.67; // Normalize to 60fps
+    
+    // Handle large time gaps (e.g., tab was in background)
+    // If deltaTime is too large, reset particles instead of trying to catch up
+    if (deltaTime > 100) {
+        // Tab was paused for a while - reset rain particles to prevent weird behavior
+        initRainParticles();
+        deltaTime = 1; // Use normal delta for this frame
+    } else if (deltaTime < 0) {
+        // Time went backwards (system clock change) - reset
+        deltaTime = 1;
+    } else if (deltaTime === 0 || isNaN(deltaTime)) {
+        // Prevent division by zero or NaN
+        deltaTime = 1;
+    }
+    
+    lastFrameTime = now;
+    
     // Draw rain (if enabled) - use time-based updates so it continues even when paused
     if (gameState.settings.rainEnabled) {
-        const now = Date.now();
-        const deltaTime = Math.min((now - lastFrameTime) / 16.67, 100); // Cap at 100ms to prevent huge jumps
-        lastFrameTime = now;
-        
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
         ctx.lineWidth = 1;
         rainParticles.forEach((particle, i) => {
@@ -331,15 +347,12 @@ function draw() {
             ctx.stroke();
             
             // Update based on actual time elapsed, not frame count
-            particle.y += particle.speed * (deltaTime / 16.67); // Normalize to 60fps
+            particle.y += particle.speed * deltaTime;
             if (particle.y > canvas.height) {
                 particle.y = -10;
                 particle.x = Math.random() * canvas.width;
             }
         });
-    } else {
-        // Still update lastFrameTime even when rain is disabled to prevent time jumps
-        lastFrameTime = Date.now();
     }
     
     // Draw water (dark blue) - fills right side and below beach curve
@@ -589,6 +602,16 @@ function drawRipples() {
     if (!canvas) return;
     
     const now = Date.now();
+    
+    // Handle case where lastRippleSpawn might be uninitialized or very old
+    if (!lastRippleSpawn || lastRippleSpawn === 0) {
+        lastRippleSpawn = now;
+    }
+    
+    // Handle large time gaps (e.g., tab was in background) - reset spawn timer
+    if (now - lastRippleSpawn > 10000) { // More than 10 seconds gap
+        lastRippleSpawn = now - RIPPLE_SPAWN_INTERVAL; // Reset to allow immediate spawn
+    }
     
     // Spawn new ripples randomly (but not too frequently)
     if (now - lastRippleSpawn > RIPPLE_SPAWN_INTERVAL + Math.random() * 150) {
