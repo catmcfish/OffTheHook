@@ -166,13 +166,17 @@ expressApp.post('/api/register', async (req, res) => {
         });
         console.log(`User created: ${username}`);
 
-        // Initialize user game data
+        // Initialize user game data with default settings
         console.log(`Initializing game data for: ${username}`);
         await db.collection('userData').doc(username).set({
             username: username,
             gold: 0,
             fishCount: 0,
             inventory: [],
+            settings: {
+                rainEnabled: true,
+                grassEnabled: true
+            },
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
         console.log(`Game data initialized for: ${username}`);
@@ -297,13 +301,20 @@ expressApp.post('/api/user-data/:username', async (req, res) => {
         }
 
         // Update user data
-        await db.collection('userData').doc(username).set({
+        const userDataUpdate = {
             username: username,
             gold: gold || 0,
             fishCount: fishCount || 0,
             inventory: inventory || [],
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+        };
+        
+        // Include settings if provided
+        if (req.body.settings) {
+            userDataUpdate.settings = req.body.settings;
+        }
+        
+        await db.collection('userData').doc(username).set(userDataUpdate, { merge: true });
 
         res.json({ success: true });
     } catch (error) {
