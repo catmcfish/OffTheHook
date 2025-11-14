@@ -149,7 +149,7 @@ function initRainParticles() {
         rainParticles.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            speed: 2 + Math.random() * 3
+            speed: 6 + Math.random() * 3
         });
     }
     lastFrameTime = Date.now();
