@@ -45,7 +45,8 @@ const gameState = {
     currentEvent: null, // Current synchronous event
     isAdmin: false, // Set from database userData.isAdmin
     adminPanelInterval: null, // Interval for updating admin panel
-    backpackSort: 'recent' // Current backpack sort: 'recent', 'value', 'rarity'
+    backpackSort: 'recent', // Current backpack sort: 'recent', 'value', 'rarity'
+    spacebarPressed: false // Track if spacebar is currently being processed to prevent repeat casts
 };
 
 // Canvas setup - will be initialized when DOM is ready
@@ -1547,11 +1548,12 @@ function castLine() {
                     if (gameState.lineDepth >= gameState.maxDepth) {
                         clearInterval(castInterval);
                         gameState.isCasting = false;
+                        // Set isReeling immediately so line/bobber stay visible during bite delay
+                        gameState.isReeling = true;
                         
-                        // Fish bites!
+                        // Fish bites! (keep line/bobber visible during this delay)
                         setTimeout(() => {
                             gameState.currentFish = generateFish();
-                            gameState.isReeling = true;
                             startQTE();
                         }, 500);
                     }
@@ -2493,34 +2495,66 @@ function initGame() {
     window.removeEventListener('resize', resizeCanvas);
     window.addEventListener('resize', resizeCanvas);
     
-    // Function to close fish info and cast again
+    // Function to close fish info (without casting)
+    function closeFishInfo() {
+        const fishInfo = document.getElementById('fish-info');
+        if (fishInfo && !fishInfo.classList.contains('hidden')) {
+            fishInfo.classList.add('hidden');
+        }
+    }
+    
+    // Function to close fish info and cast again (for spacebar)
     function closeFishInfoAndCast() {
         const fishInfo = document.getElementById('fish-info');
         if (fishInfo && !fishInfo.classList.contains('hidden')) {
             fishInfo.classList.add('hidden');
             // Cast again if not already casting/reeling
-            if (!gameState.isCasting && !gameState.isReeling && !gameState.qteActive) {
+            if (!gameState.isCasting && !gameState.isReeling && !gameState.qteActive && !gameState.spacebarPressed) {
+                gameState.spacebarPressed = true;
                 castLine();
+                // Reset flag after a short delay to allow next cast
+                setTimeout(() => {
+                    gameState.spacebarPressed = false;
+                }, 100);
             }
         }
     }
     
     // Spacebar casting (only when not in QTE)
     // Also closes fish info menu if it's open
+    // Prevents multiple casts when spacebar is held down
     document.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
+            // Prevent default scrolling behavior
+            e.preventDefault();
+            
+            // Prevent multiple casts if spacebar is already being processed
+            if (gameState.spacebarPressed) {
+                return;
+            }
+            
             const fishInfo = document.getElementById('fish-info');
             // If fish info is visible, close it and cast
             if (fishInfo && !fishInfo.classList.contains('hidden')) {
-                e.preventDefault();
                 closeFishInfoAndCast();
                 return;
             }
             // Otherwise, normal casting behavior
             if (!gameState.isCasting && !gameState.isReeling && !gameState.qteActive) {
-                e.preventDefault();
+                gameState.spacebarPressed = true;
                 castLine();
+                // Reset flag after a short delay to allow next cast
+                setTimeout(() => {
+                    gameState.spacebarPressed = false;
+                }, 100);
             }
+        }
+    });
+    
+    // Reset spacebar flag when key is released (helps prevent stuck state)
+    document.addEventListener('keyup', (e) => {
+        if (e.code === 'Space') {
+            gameState.spacebarPressed = false;
         }
     });
 
@@ -2623,10 +2657,10 @@ function initGame() {
     }
     
 
-    // Continue button for fish info
+    // Continue button for fish info (only closes, doesn't auto-cast)
     const continueButton = document.getElementById('continue-button');
     if (continueButton) {
-        continueButton.addEventListener('click', closeFishInfoAndCast);
+        continueButton.addEventListener('click', closeFishInfo);
     }
 
     // Authentication handlers
