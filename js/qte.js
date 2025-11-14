@@ -29,23 +29,64 @@ function startQTE() {
         if (!gameState.qteActive) return;
         
         if (gameState.isMobile) {
-            // Mobile: Generate tap location
+            // Mobile: Generate tap location - expanded to cover more of the screen
+            // Including edges, corners, and more varied positions
             const locations = [
+                // Corners
+                { x: 10, y: 10 },
+                { x: 90, y: 10 },
+                { x: 10, y: 90 },
+                { x: 90, y: 90 },
+                // Edges (top/bottom)
+                { x: 20, y: 15 },
+                { x: 50, y: 10 },
+                { x: 80, y: 15 },
+                { x: 20, y: 85 },
+                { x: 50, y: 90 },
+                { x: 80, y: 85 },
+                // Edges (left/right)
+                { x: 10, y: 30 },
+                { x: 10, y: 50 },
+                { x: 10, y: 70 },
+                { x: 90, y: 30 },
+                { x: 90, y: 50 },
+                { x: 90, y: 70 },
+                // Middle area (varied)
                 { x: 20, y: 30 },
                 { x: 80, y: 30 },
                 { x: 20, y: 70 },
                 { x: 80, y: 70 },
+                { x: 30, y: 20 },
+                { x: 70, y: 20 },
+                { x: 30, y: 80 },
+                { x: 70, y: 80 },
+                // Center area
                 { x: 50, y: 20 },
-                { x: 50, y: 80 }
+                { x: 50, y: 80 },
+                { x: 25, y: 50 },
+                { x: 75, y: 50 },
+                // More varied positions
+                { x: 15, y: 40 },
+                { x: 85, y: 40 },
+                { x: 15, y: 60 },
+                { x: 85, y: 60 },
+                { x: 40, y: 15 },
+                { x: 60, y: 15 },
+                { x: 40, y: 85 },
+                { x: 60, y: 85 }
             ];
             const location = locations[Math.floor(Math.random() * locations.length)];
             gameState.qteCurrentTapLocation = location;
             
-            qteButton.textContent = '👆';
-            qteButton.style.position = 'absolute';
-            qteButton.style.left = location.x + '%';
-            qteButton.style.top = location.y + '%';
+            // Use NES.icons exclamation-triangle-alt icon for 8-bit pixel art style
+            qteButton.innerHTML = '<i class="nes-icon nes-icon-exclamation-triangle-alt"></i>';
+            qteButton.className = 'qte-button nes-btn is-success'; // Ensure NES.css classes are maintained
+            // Position relative to overlay (full screen)
+            qteButton.style.position = 'fixed';
+            qteButton.style.left = location.x + 'vw';
+            qteButton.style.top = location.y + 'vh';
             qteButton.style.transform = 'translate(-50%, -50%)';
+            qteButton.style.zIndex = '16'; // Above overlay (z-index 15)
             qteInstruction.textContent = `Tap here! (${gameState.qteSuccesses + 1}/${gameState.qteRequired})`;
         } else {
             // Desktop: Generate key press
@@ -53,6 +94,7 @@ function startQTE() {
             gameState.qteCurrentKey = key;
             
             qteButton.textContent = key;
+            qteButton.className = 'qte-button nes-btn is-success'; // Ensure NES.css classes are maintained
             qteButton.style.position = 'relative';
             qteButton.style.left = 'auto';
             qteButton.style.top = 'auto';
@@ -134,9 +176,12 @@ function startQTE() {
         
         if (tapX >= rect.left && tapX <= rect.right && tapY >= rect.top && tapY <= rect.bottom) {
             gameState.qteSuccesses++;
+            // Preserve positioning transform while adding scale animation
             qteButton.style.transform = 'translate(-50%, -50%) scale(0.9)';
             setTimeout(() => {
-                qteButton.style.transform = 'translate(-50%, -50%) scale(1)';
+                if (gameState.qteActive) {
+                    qteButton.style.transform = 'translate(-50%, -50%) scale(1)';
+                }
             }, 100);
             
             if (gameState.qteSuccesses < gameState.qteRequired) {
