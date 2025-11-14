@@ -471,6 +471,86 @@ expressApp.post('/api/leaderboard', async (req, res) => {
     }
 });
 
+// Refresh leaderboard - rebuild from all user data (admin only)
+expressApp.post('/api/leaderboard/refresh', async (req, res) => {
+    try {
+        checkFirestore();
+        
+        // Get all user data
+        const userDataRef = db.collection('userData');
+        const userDataSnapshot = await userDataRef.get();
+        
+        // Collect each user's most valuable fish
+        const userBestFish = [];
+        
+        userDataSnapshot.forEach(doc => {
+            const userData = doc.data();
+            const username = userData.username || doc.id;
+            const inventory = userData.inventory || [];
+            
+            // Find most valuable fish for this user
+            if (inventory.length > 0) {
+                const bestFish = inventory.reduce((max, fish) => {
+                    return (fish.value > max.value) ? fish : max;
+                }, inventory[0]);
+                
+                userBestFish.push({
+                    username: username,
+                    fish: bestFish
+                });
+            }
+        });
+        
+        // Sort by fish value descending
+        userBestFish.sort((a, b) => b.fish.value - a.fish.value);
+        
+        // Take top 10
+        const top10 = userBestFish.slice(0, 10);
+        
+        // Clear existing leaderboard
+        const leaderboardRef = db.collection('leaderboard');
+        const existingSnapshot = await leaderboardRef.get();
+        const batch = db.batch();
+        
+        existingSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        
+        // Add top 10 entries
+        const addBatch = db.batch();
+        top10.forEach(entry => {
+            const newRef = leaderboardRef.doc();
+            addBatch.set(newRef, {
+                username: entry.username,
+                fishName: entry.fish.type,
+                fishRarity: entry.fish.rarity,
+                fishSize: entry.fish.size,
+                fishValue: entry.fish.value,
+                fishRarityColor: entry.fish.rarityColor,
+                timestamp: admin.firestore.FieldValue.serverTimestamp()
+            });
+        });
+        await addBatch.commit();
+        
+        console.log(`Leaderboard refreshed: ${top10.length} entries added`);
+        
+        res.json({ 
+            success: true, 
+            message: `Leaderboard refreshed with ${top10.length} entries`,
+            entriesAdded: top10.length
+        });
+    } catch (error) {
+        console.error('Refresh leaderboard error:', {
+            message: error.message,
+            code: error.code,
+            stack: error.stack
+        });
+        const formattedError = formatError(error);
+        res.status(formattedError.status || 500).json(formattedError);
+    }
+});
+
 // Health check with Firestore connectivity test
 expressApp.get('/health', async (req, res) => {
     const health = {

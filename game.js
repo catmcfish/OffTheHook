@@ -2419,6 +2419,53 @@ function initGame() {
         }
     });
     
+    // Admin refresh leaderboard button
+    const refreshLeaderboardButton = document.getElementById('admin-refresh-leaderboard');
+    const refreshStatusDiv = document.getElementById('admin-refresh-status');
+    if (refreshLeaderboardButton) {
+        refreshLeaderboardButton.addEventListener('click', async () => {
+            if (!gameState.isAdmin) {
+                refreshStatusDiv.textContent = 'Error: Admin access required';
+                refreshStatusDiv.style.color = '#e74c3c';
+                return;
+            }
+            
+            refreshLeaderboardButton.disabled = true;
+            refreshStatusDiv.textContent = 'Refreshing leaderboard...';
+            refreshStatusDiv.style.color = '#f39c12';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/leaderboard/refresh`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    refreshStatusDiv.textContent = `✓ ${result.message}`;
+                    refreshStatusDiv.style.color = '#2ecc71';
+                    
+                    // Clear status after 3 seconds
+                    setTimeout(() => {
+                        refreshStatusDiv.textContent = '';
+                    }, 3000);
+                } else {
+                    refreshStatusDiv.textContent = `Error: ${result.error}`;
+                    refreshStatusDiv.style.color = '#e74c3c';
+                }
+            } catch (error) {
+                console.error('Error refreshing leaderboard:', error);
+                refreshStatusDiv.textContent = 'Error: Failed to refresh leaderboard';
+                refreshStatusDiv.style.color = '#e74c3c';
+            } finally {
+                refreshLeaderboardButton.disabled = false;
+            }
+        });
+    }
+    
     // Load settings on init
     loadSettings();
     // Ensure admin panel is hidden initially
