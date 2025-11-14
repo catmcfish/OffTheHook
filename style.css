@@ -834,6 +834,9 @@ body.nes-container::after {
     .cast-button-top {
         font-size: 1em;
         padding: 8px 20px;
+        top: auto;
+        bottom: 20px;
+        transform: translateX(-50%);
     }
     
     .backpack-button {
