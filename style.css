@@ -840,6 +840,9 @@ body.nes-container::after {
         width: 50px;
         height: 50px;
         font-size: 1.5em;
+        top: 20px;
+        left: 20px;
+        right: auto;
     }
     
     .qte-button {
@@ -857,14 +860,18 @@ body.nes-container::after {
     }
     
     .settings-button {
-        right: 140px;
+        top: 80px;
+        left: 20px;
+        right: auto;
         width: 50px;
         height: 50px;
         font-size: 1.5em;
     }
     
     .leaderboard-button {
-        right: 70px;
+        top: 140px;
+        left: 20px;
+        right: auto;
         width: 50px;
         height: 50px;
         font-size: 1.5em;
