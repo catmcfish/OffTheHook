@@ -26,6 +26,11 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
 console.log('GOOGLE_APPLICATION_CREDENTIALS:', process.env.GOOGLE_APPLICATION_CREDENTIALS ? 'Set' : 'Not set');
 
+// Simple health check route (before Firebase-dependent routes)
+expressApp.get('/healthz', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
+
 // Middleware
 expressApp.use(cors());
 expressApp.use(express.json());

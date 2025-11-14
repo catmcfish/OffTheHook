@@ -8,8 +8,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install --omit=dev
 
-# Copy server file
+# Copy server file and server directory
 COPY server.js ./
+COPY server/ ./server/
 
 # Copy frontend files (from root, which are in git)
 COPY index.html game.js style.css config.js ./
