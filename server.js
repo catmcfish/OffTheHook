@@ -328,7 +328,7 @@ expressApp.post('/api/user-data/:username', async (req, res) => {
     }
 });
 
-// Get leaderboard
+// Get leaderboard - top 10 most valuable fish server-wide
 expressApp.get('/api/leaderboard', async (req, res) => {
     try {
         checkFirestore();
@@ -336,7 +336,7 @@ expressApp.get('/api/leaderboard', async (req, res) => {
         const leaderboardRef = db.collection('leaderboard');
         const snapshot = await leaderboardRef
             .orderBy('fishValue', 'desc')
-            .limit(100)
+            .limit(10)
             .get();
 
         const leaderboard = [];
@@ -384,22 +384,42 @@ expressApp.post('/api/leaderboard', async (req, res) => {
             userEntry = { id: doc.id, ...doc.data() };
         });
 
-        // Get current top 100 to check if this fish qualifies
-        const top100Query = await leaderboardRef
+        // Get current top 10 to check if this fish qualifies for leaderboard
+        const top10Query = await leaderboardRef
+            .orderBy('fishValue', 'desc')
+            .limit(10)
+            .get();
+
+        const top10 = [];
+        top10Query.forEach(doc => {
+            top10.push(doc.data());
+        });
+
+        // Get all entries to check threshold (we maintain top 100 in DB for buffer)
+        const allEntriesQuery = await leaderboardRef
             .orderBy('fishValue', 'desc')
             .limit(100)
             .get();
 
-        const top100 = [];
-        top100Query.forEach(doc => {
-            top100.push(doc.data());
+        const allEntries = [];
+        allEntriesQuery.forEach(doc => {
+            allEntries.push(doc.data());
         });
 
-        // Determine if we should update
-        const shouldUpdate = !userEntry ||
-            fish.value > userEntry.fishValue ||
-            top100.length < 100 ||
-            (top100.length >= 100 && fish.value > top100[top100.length - 1].fishValue);
+        // Determine if we should update:
+        // 1. User has no entry yet AND (there are fewer than 10 entries OR fish qualifies for top 10)
+        // 2. User has an entry AND the new fish is better than their current entry
+        const minTop10Value = top10.length >= 10 ? top10[top10.length - 1].fishValue : 0;
+        const qualifiesForTop10 = top10.length < 10 || fish.value > minTop10Value;
+        
+        let shouldUpdate = false;
+        if (!userEntry) {
+            // User has no entry - only add if it qualifies for top 10 or there's room
+            shouldUpdate = qualifiesForTop10;
+        } else {
+            // User has an entry - only update if new fish is better
+            shouldUpdate = fish.value > userEntry.fishValue;
+        }
 
         if (shouldUpdate) {
             // Remove old entry if exists
