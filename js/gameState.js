@@ -50,7 +50,8 @@ const gameState = {
     isAdmin: false, // Set from database userData.isAdmin
     adminPanelInterval: null, // Interval for updating admin panel
     backpackSort: 'recent', // Current backpack sort: 'recent', 'value', 'rarity'
-    spacebarPressed: false // Track if spacebar is currently being processed to prevent repeat casts
+    spacebarPressed: false, // Track if spacebar is currently being processed to prevent repeat casts
+    buyback: null // Last sold fish (for buyback feature)
 };
 
 // Canvas setup - will be initialized when DOM is ready

@@ -4,6 +4,12 @@
 function castLine() {
     if (gameState.isCasting || gameState.isReeling) return;
     
+    // Don't allow casting while backpack is open
+    const backpackOverlay = document.getElementById('backpack-overlay');
+    if (backpackOverlay && !backpackOverlay.classList.contains('hidden')) {
+        return;
+    }
+    
     gameState.isCasting = true;
     gameState.lineDepth = 0;
     gameState.bobberThrown = false;
@@ -20,7 +26,7 @@ function catchFish() {
     gameState.isReeling = false;
     gameState.reelStartTime = 0;
     gameState.reelInitialDepth = null;
-    gameState.gold += gameState.currentFish.value;
+    // Gold is now earned by selling fish, not catching them
     gameState.fishCount++;
     const caughtFish = { ...gameState.currentFish };
     gameState.inventory.push(caughtFish);

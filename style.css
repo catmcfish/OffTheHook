@@ -163,11 +163,20 @@ body.nes-container::after {
     display: none;
 }
 
+.backpack-wrapper {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    justify-content: center;
+    width: 90%;
+    max-width: 900px;
+    max-height: 80vh;
+}
+
 .backpack-content {
     background: #2c3e50;
     border: 4px solid #34495e;
-    width: 90%;
-    max-width: 600px;
+    flex: 1;
     max-height: 80vh;
     overflow-y: auto;
     overflow-x: hidden; /* Prevent horizontal scrolling */
@@ -181,6 +190,96 @@ body.nes-container::after {
 
 .backpack-content::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
+}
+
+.buyback-slot-container {
+    background: #2c3e50;
+    border: 4px solid #34495e;
+    min-width: 200px;
+    max-width: 200px;
+    max-height: 80vh;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.buyback-header {
+    text-align: center;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #34495e;
+    padding-bottom: 10px;
+}
+
+.buyback-header h3 {
+    font-size: 1.2em;
+}
+
+.buyback-slot {
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    border: 2px dashed #34495e;
+    border-radius: 4px;
+}
+
+.buyback-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    width: 100%;
+    border: 2px solid #f39c12;
+    border-radius: 4px;
+    background: rgba(243, 156, 18, 0.1);
+}
+
+.buyback-item img {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 8px;
+}
+
+.buyback-item-name {
+    text-align: center;
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+
+.buyback-item-value {
+    text-align: center;
+    color: #f39c12;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.sell-button {
+    margin-top: 5px;
+    font-size: 0.8em;
+    padding: 5px 10px;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+    .backpack-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+        max-width: 95%;
+    }
+    
+    .buyback-slot-container {
+        min-width: 100%;
+        max-width: 100%;
+        margin-bottom: 20px;
+    }
+    
+    .backpack-content {
+        max-width: 100%;
+    }
 }
 
 .backpack-header {

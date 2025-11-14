@@ -15,7 +15,8 @@ async function saveUserData() {
                 fishCount: gameState.fishCount,
                 inventory: gameState.inventory,
                 settings: gameState.settings,
-                character: gameState.character
+                character: gameState.character,
+                buyback: gameState.buyback
             })
         });
         
@@ -37,6 +38,7 @@ async function loadUserData(username) {
             gameState.gold = result.data.gold || 0;
             gameState.fishCount = result.data.fishCount || 0;
             gameState.inventory = result.data.inventory || [];
+            gameState.buyback = result.data.buyback || null;
             
             // Load admin status from database
             gameState.isAdmin = result.data.isAdmin === true;
@@ -164,6 +166,7 @@ async function logout() {
     gameState.gold = 0;
     gameState.fishCount = 0;
     gameState.inventory = [];
+    gameState.buyback = null;
     if (typeof updateUI === 'function') updateUI();
     if (typeof updateBackpack === 'function') updateBackpack();
     localStorage.removeItem('fishingGameCurrentUser');

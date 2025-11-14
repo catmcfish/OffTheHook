@@ -193,7 +193,7 @@ function updateBackpack() {
     allFishContainer.style.justifyItems = 'stretch'; // Stretch items to fill grid cells
     
     // Add all fish
-    allFish.forEach(fish => {
+    allFish.forEach((fish) => {
         let fishSprite = '';
         try {
             if (typeof renderFishSprite === 'function') {
@@ -210,17 +210,149 @@ function updateBackpack() {
         fishDiv.style.alignItems = 'center';
         fishDiv.style.padding = '10px';
         fishDiv.style.width = '100%';
+        
+        // Store fish data as JSON in data attribute for reliable matching
+        fishDiv.setAttribute('data-fish-data', JSON.stringify({
+            type: fish.type,
+            size: fish.size,
+            rarity: fish.rarity,
+            value: fish.value,
+            rarityColor: fish.rarityColor
+        }));
+        
+        const sellButton = document.createElement('button');
+        sellButton.className = 'sell-button nes-btn is-error';
+        sellButton.textContent = 'Sell';
+        sellButton.style.marginTop = '8px';
+        sellButton.addEventListener('click', () => {
+            const fishData = JSON.parse(fishDiv.getAttribute('data-fish-data'));
+            sellFish(fishData);
+        });
+        
         fishDiv.innerHTML = `
             ${fishSprite ? `<img src="${fishSprite}" alt="${fish.type}" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; width: 48px; height: 48px; margin-bottom: 8px;" />` : ''}
             <div class="backpack-item-name" style="color: ${fish.rarityColor}; text-align: center; font-size: 0.9em;">${fish.type}</div>
             <div class="backpack-item-details" style="text-align: center; font-size: 0.8em; margin: 3px 0;">${fish.size} ${fish.rarity}</div>
             <div class="backpack-item-value" style="text-align: center; color: #f39c12; font-size: 0.9em;">${fish.value}G</div>
         `;
+        fishDiv.appendChild(sellButton);
         allFishContainer.appendChild(fishDiv);
     });
     
     container.appendChild(allFishContainer);
     backpackList.appendChild(container);
+    
+    // Update buyback slot display
+    updateBuybackSlot();
+}
+
+function updateBuybackSlot() {
+    const buybackSlot = document.getElementById('buyback-slot');
+    if (!buybackSlot) return;
+    
+    buybackSlot.innerHTML = '';
+    
+    if (gameState.buyback) {
+        let fishSprite = '';
+        try {
+            if (typeof renderFishSprite === 'function') {
+                fishSprite = renderFishSprite(gameState.buyback);
+            }
+        } catch (error) {
+            console.error('Error rendering sprite:', error);
+        }
+        
+        const buybackDiv = document.createElement('div');
+        buybackDiv.className = 'buyback-item';
+        
+        const buybackButton = document.createElement('button');
+        buybackButton.className = 'nes-btn is-success';
+        buybackButton.textContent = 'Buyback';
+        buybackButton.style.marginTop = '10px';
+        buybackButton.style.fontSize = '0.85em';
+        buybackButton.addEventListener('click', () => {
+            buybackFish();
+        });
+        
+        buybackDiv.innerHTML = `
+            ${fishSprite ? `<img src="${fishSprite}" alt="${gameState.buyback.type}" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; width: 64px; height: 64px; margin-bottom: 8px;" />` : ''}
+            <div class="buyback-item-name" style="color: ${gameState.buyback.rarityColor}; text-align: center; font-size: 0.9em;">${gameState.buyback.type}</div>
+            <div style="text-align: center; font-size: 0.8em; margin: 3px 0; color: #95a5a6;">${gameState.buyback.size} ${gameState.buyback.rarity}</div>
+            <div class="buyback-item-value" style="text-align: center; color: #f39c12; font-size: 0.9em;">${gameState.buyback.value}G</div>
+        `;
+        buybackDiv.appendChild(buybackButton);
+        buybackSlot.appendChild(buybackDiv);
+    } else {
+        buybackSlot.innerHTML = '<div style="text-align: center; color: #95a5a6; font-size: 0.9em;">No fish in buyback</div>';
+    }
+}
+
+function sellFish(fishData) {
+    // Find the fish in inventory by matching all properties
+    const fishIndex = gameState.inventory.findIndex(f => 
+        f.type === fishData.type &&
+        f.size === fishData.size &&
+        f.rarity === fishData.rarity &&
+        f.value === fishData.value
+    );
+    
+    if (fishIndex === -1) {
+        console.error('Fish not found in inventory:', fishData);
+        return;
+    }
+    
+    const fish = gameState.inventory[fishIndex];
+    
+    // Remove fish from inventory
+    gameState.inventory.splice(fishIndex, 1);
+    
+    // Add gold
+    gameState.gold += fish.value;
+    
+    // Store fish in buyback (replace previous buyback)
+    gameState.buyback = { ...fish };
+    
+    // Save user data
+    if (typeof saveUserData === 'function') {
+        saveUserData();
+    }
+    
+    // Update UI
+    if (typeof updateUI === 'function') updateUI();
+    if (typeof updateBackpack === 'function') updateBackpack();
+}
+
+function buybackFish() {
+    if (!gameState.buyback) {
+        console.error('No fish in buyback');
+        return;
+    }
+    
+    const fish = gameState.buyback;
+    
+    // Check if player has enough gold
+    if (gameState.gold < fish.value) {
+        alert(`Not enough gold! Need ${fish.value}G but only have ${gameState.gold}G.`);
+        return;
+    }
+    
+    // Remove gold
+    gameState.gold -= fish.value;
+    
+    // Restore fish to inventory
+    gameState.inventory.push({ ...fish });
+    
+    // Clear buyback
+    gameState.buyback = null;
+    
+    // Save user data
+    if (typeof saveUserData === 'function') {
+        saveUserData();
+    }
+    
+    // Update UI
+    if (typeof updateUI === 'function') updateUI();
+    if (typeof updateBackpack === 'function') updateBackpack();
 }
 
 function loadSettings() {
@@ -351,6 +483,9 @@ if (typeof window !== 'undefined') {
     window.updateUI = updateUI;
     window.showFishInfo = showFishInfo;
     window.updateBackpack = updateBackpack;
+    window.updateBuybackSlot = updateBuybackSlot;
+    window.sellFish = sellFish;
+    window.buybackFish = buybackFish;
     window.loadSettings = loadSettings;
     window.saveSettings = saveSettings;
     window.updateSettingsUI = updateSettingsUI;

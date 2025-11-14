@@ -108,6 +108,12 @@ function initGame() {
                 return;
             }
             
+            // Don't allow casting while backpack is open
+            const backpackOverlay = document.getElementById('backpack-overlay');
+            if (backpackOverlay && !backpackOverlay.classList.contains('hidden')) {
+                return;
+            }
+            
             const fishInfo = document.getElementById('fish-info');
             // If fish info is visible, close it and cast
             if (fishInfo && !fishInfo.classList.contains('hidden')) {
@@ -138,9 +144,21 @@ function initGame() {
     // Cast button at top
     const castButtonTop = document.getElementById('cast-button-top');
     if (castButtonTop && typeof castLine === 'function') {
-        castButtonTop.addEventListener('click', castLine);
+        castButtonTop.addEventListener('click', () => {
+            // Don't allow casting while backpack is open
+            const backpackOverlay = document.getElementById('backpack-overlay');
+            if (backpackOverlay && !backpackOverlay.classList.contains('hidden')) {
+                return;
+            }
+            castLine();
+        });
         castButtonTop.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            // Don't allow casting while backpack is open
+            const backpackOverlay = document.getElementById('backpack-overlay');
+            if (backpackOverlay && !backpackOverlay.classList.contains('hidden')) {
+                return;
+            }
             castLine();
         });
     }
@@ -157,6 +175,10 @@ function initGame() {
                 }
                 if (typeof updateBackpack === 'function') {
                     updateBackpack();
+                }
+                // updateBuybackSlot is called by updateBackpack, but ensure it's updated
+                if (typeof updateBuybackSlot === 'function') {
+                    updateBuybackSlot();
                 }
             }
         });
