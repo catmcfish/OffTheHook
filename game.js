@@ -62,27 +62,201 @@ function resizeCanvas() {
     }
 }
 
-// Fantasy fish types
-const fishTypes = [
-    { name: 'Glowfin', baseValue: 10, color: '#ffff00' },
-    { name: 'Crystal Scale', baseValue: 15, color: '#00ffff' },
-    { name: 'Shadow Serpent', baseValue: 20, color: '#800080' },
-    { name: 'Fire Gills', baseValue: 25, color: '#ff4500' },
-    { name: 'Ice Fin', baseValue: 18, color: '#87ceeb' },
-    { name: 'Thunder Trout', baseValue: 22, color: '#9370db' },
-    { name: 'Mystic Ray', baseValue: 30, color: '#ff1493' },
-    { name: 'Cosmic Carp', baseValue: 35, color: '#4b0082' },
-    { name: 'Phantom Pike', baseValue: 28, color: '#2f4f4f' },
-    { name: 'Starfish', baseValue: 40, color: '#ffd700' },
-    { name: 'Dragon Fin', baseValue: 50, color: '#ff6347' },
-    { name: 'Celestial Bass', baseValue: 60, color: '#00ced1' },
-    { name: 'Void Eel', baseValue: 70, color: '#191970' },
-    { name: 'Prismatic Perch', baseValue: 80, color: '#ff1493' },
-    { name: 'Ethereal Angelfish', baseValue: 90, color: '#da70d6' },
-    { name: 'Titan Tuna', baseValue: 100, color: '#ff8c00' },
-    { name: 'Godfish', baseValue: 150, color: '#ff00ff' },
-    { name: 'Omnipotent Oarfish', baseValue: 200, color: '#ff1493' }
-];
+// Fantasy fish types - 25 per rarity (175 total)
+const fishTypes = {
+    Common: [
+        { name: 'Glowfin', baseValue: 10, color: '#ffff00', designStyle: 'glow' },
+        { name: 'Sunny Bass', baseValue: 12, color: '#ffd700', designStyle: 'default' },
+        { name: 'Blue Minnow', baseValue: 8, color: '#4169e1', designStyle: 'default' },
+        { name: 'Green Guppy', baseValue: 9, color: '#32cd32', designStyle: 'default' },
+        { name: 'Red Snapper', baseValue: 11, color: '#ff6347', designStyle: 'default' },
+        { name: 'Silver Scale', baseValue: 10, color: '#c0c0c0', designStyle: 'default' },
+        { name: 'Orange Fin', baseValue: 9, color: '#ffa500', designStyle: 'default' },
+        { name: 'Purple Perch', baseValue: 10, color: '#9370db', designStyle: 'default' },
+        { name: 'Pink Puffer', baseValue: 8, color: '#ff69b4', designStyle: 'glow' },
+        { name: 'Yellow Tail', baseValue: 9, color: '#ffeb3b', designStyle: 'default' },
+        { name: 'Teal Trout', baseValue: 10, color: '#008080', designStyle: 'default' },
+        { name: 'Coral Cod', baseValue: 11, color: '#ff7f50', designStyle: 'default' },
+        { name: 'Lime Loach', baseValue: 8, color: '#00ff00', designStyle: 'default' },
+        { name: 'Aqua Angler', baseValue: 10, color: '#00ffff', designStyle: 'default' },
+        { name: 'Mint Mackerel', baseValue: 9, color: '#98fb98', designStyle: 'default' },
+        { name: 'Peach Perch', baseValue: 10, color: '#ffdab9', designStyle: 'default' },
+        { name: 'Lavender Loach', baseValue: 9, color: '#e6e6fa', designStyle: 'default' },
+        { name: 'Cyan Carp', baseValue: 10, color: '#00bfff', designStyle: 'default' },
+        { name: 'Amber Anchovy', baseValue: 8, color: '#ffbf00', designStyle: 'default' },
+        { name: 'Rose Ray', baseValue: 11, color: '#ff007f', designStyle: 'default' },
+        { name: 'Turquoise Tuna', baseValue: 10, color: '#40e0d0', designStyle: 'default' },
+        { name: 'Violet Vimba', baseValue: 9, color: '#8a2be2', designStyle: 'default' },
+        { name: 'Sage Salmon', baseValue: 10, color: '#87ae73', designStyle: 'default' },
+        { name: 'Ivory Ide', baseValue: 9, color: '#fffff0', designStyle: 'default' },
+        { name: 'Honey Herring', baseValue: 10, color: '#f0fff0', designStyle: 'default' }
+    ],
+    Uncommon: [
+        { name: 'Crystal Scale', baseValue: 15, color: '#00ffff', designStyle: 'ice' },
+        { name: 'Shimmer Shad', baseValue: 18, color: '#87ceeb', designStyle: 'glow' },
+        { name: 'Sparkle Sprat', baseValue: 16, color: '#ffd700', designStyle: 'glow' },
+        { name: 'Glimmer Goby', baseValue: 17, color: '#e0e0e0', designStyle: 'glow' },
+        { name: 'Twinkle Trout', baseValue: 16, color: '#fffacd', designStyle: 'glow' },
+        { name: 'Flash Flounder', baseValue: 18, color: '#ffff99', designStyle: 'electric' },
+        { name: 'Gleam Gar', baseValue: 17, color: '#b0e0e6', designStyle: 'ice' },
+        { name: 'Radiance Ray', baseValue: 19, color: '#ffefd5', designStyle: 'glow' },
+        { name: 'Luster Loach', baseValue: 16, color: '#f0e68c', designStyle: 'glow' },
+        { name: 'Brilliance Bass', baseValue: 18, color: '#e6e6fa', designStyle: 'ice' },
+        { name: 'Glint Gudgeon', baseValue: 17, color: '#fff8dc', designStyle: 'glow' },
+        { name: 'Sheen Shiner', baseValue: 16, color: '#f5deb3', designStyle: 'glow' },
+        { name: 'Polish Perch', baseValue: 18, color: '#dda0dd', designStyle: 'ice' },
+        { name: 'Gloss Grouper', baseValue: 17, color: '#98d8c8', designStyle: 'glow' },
+        { name: 'Shine Snapper', baseValue: 19, color: '#fafad2', designStyle: 'glow' },
+        { name: 'Luster Ling', baseValue: 16, color: '#e0ffff', designStyle: 'ice' },
+        { name: 'Glimmer Gurnard', baseValue: 18, color: '#ffe4b5', designStyle: 'glow' },
+        { name: 'Sparkle Sturgeon', baseValue: 17, color: '#d3d3d3', designStyle: 'glow' },
+        { name: 'Twinkle Turbot', baseValue: 16, color: '#f0f8ff', designStyle: 'ice' },
+        { name: 'Flash Fluke', baseValue: 18, color: '#fffaf0', designStyle: 'glow' },
+        { name: 'Gleam Gudgeon', baseValue: 17, color: '#f5f5dc', designStyle: 'glow' },
+        { name: 'Radiance Roach', baseValue: 19, color: '#ffe4e1', designStyle: 'glow' },
+        { name: 'Brilliance Bream', baseValue: 16, color: '#e6e6fa', designStyle: 'ice' },
+        { name: 'Glint Goby', baseValue: 18, color: '#fff8dc', designStyle: 'glow' },
+        { name: 'Sheen Smelt', baseValue: 17, color: '#f0e68c', designStyle: 'glow' }
+    ],
+    Rare: [
+        { name: 'Fire Gills', baseValue: 25, color: '#ff4500', designStyle: 'fire' },
+        { name: 'Ice Fin', baseValue: 22, color: '#87ceeb', designStyle: 'ice' },
+        { name: 'Thunder Trout', baseValue: 24, color: '#9370db', designStyle: 'electric' },
+        { name: 'Storm Striper', baseValue: 23, color: '#4b0082', designStyle: 'electric' },
+        { name: 'Frost Flounder', baseValue: 22, color: '#b0e0e6', designStyle: 'ice' },
+        { name: 'Blaze Bass', baseValue: 26, color: '#ff6347', designStyle: 'fire' },
+        { name: 'Glacier Gar', baseValue: 21, color: '#e0f6ff', designStyle: 'ice' },
+        { name: 'Volt Vimba', baseValue: 25, color: '#9370db', designStyle: 'electric' },
+        { name: 'Ember Eel', baseValue: 24, color: '#ff8c00', designStyle: 'fire' },
+        { name: 'Crystal Cod', baseValue: 23, color: '#00ffff', designStyle: 'ice' },
+        { name: 'Lightning Ling', baseValue: 26, color: '#ffff00', designStyle: 'electric' },
+        { name: 'Magma Mackerel', baseValue: 25, color: '#ff4500', designStyle: 'fire' },
+        { name: 'Frozen Fluke', baseValue: 22, color: '#87ceeb', designStyle: 'ice' },
+        { name: 'Spark Snapper', baseValue: 24, color: '#da70d6', designStyle: 'electric' },
+        { name: 'Inferno Ide', baseValue: 26, color: '#ff4500', designStyle: 'fire' },
+        { name: 'Blizzard Bream', baseValue: 21, color: '#b0e0e6', designStyle: 'ice' },
+        { name: 'Bolt Burbot', baseValue: 25, color: '#9370db', designStyle: 'electric' },
+        { name: 'Flame Flounder', baseValue: 24, color: '#ff6347', designStyle: 'fire' },
+        { name: 'Iceberg Ide', baseValue: 23, color: '#e0f6ff', designStyle: 'ice' },
+        { name: 'Thunderbolt Tuna', baseValue: 26, color: '#ffff00', designStyle: 'electric' },
+        { name: 'Scorch Shad', baseValue: 25, color: '#ff8c00', designStyle: 'fire' },
+        { name: 'Frostbite Fluke', baseValue: 22, color: '#87ceeb', designStyle: 'ice' },
+        { name: 'Zap Zander', baseValue: 24, color: '#9370db', designStyle: 'electric' },
+        { name: 'Cinder Carp', baseValue: 26, color: '#ff4500', designStyle: 'fire' },
+        { name: 'Hail Herring', baseValue: 21, color: '#b0e0e6', designStyle: 'ice' }
+    ],
+    Epic: [
+        { name: 'Shadow Serpent', baseValue: 35, color: '#800080', designStyle: 'shadow' },
+        { name: 'Phantom Pike', baseValue: 32, color: '#2f4f4f', designStyle: 'shadow' },
+        { name: 'Mystic Ray', baseValue: 38, color: '#ff1493', designStyle: 'glow' },
+        { name: 'Cosmic Carp', baseValue: 40, color: '#4b0082', designStyle: 'electric' },
+        { name: 'Ethereal Eel', baseValue: 36, color: '#da70d6', designStyle: 'shadow' },
+        { name: 'Spectral Snapper', baseValue: 37, color: '#9370db', designStyle: 'shadow' },
+        { name: 'Astral Angler', baseValue: 39, color: '#8a2be2', designStyle: 'electric' },
+        { name: 'Wraith Wrasse', baseValue: 34, color: '#2f4f4f', designStyle: 'shadow' },
+        { name: 'Spirit Sturgeon', baseValue: 38, color: '#800080', designStyle: 'shadow' },
+        { name: 'Nebula Nase', baseValue: 40, color: '#4b0082', designStyle: 'electric' },
+        { name: 'Ghost Gar', baseValue: 35, color: '#696969', designStyle: 'shadow' },
+        { name: 'Void Vimba', baseValue: 37, color: '#191970', designStyle: 'shadow' },
+        { name: 'Stellar Snapper', baseValue: 39, color: '#9370db', designStyle: 'electric' },
+        { name: 'Phantom Perch', baseValue: 36, color: '#2f4f4f', designStyle: 'shadow' },
+        { name: 'Celestial Cod', baseValue: 38, color: '#8a2be2', designStyle: 'electric' },
+        { name: 'Echo Eel', baseValue: 34, color: '#800080', designStyle: 'shadow' },
+        { name: 'Aurora Angelfish', baseValue: 40, color: '#ff1493', designStyle: 'glow' },
+        { name: 'Shade Shad', baseValue: 37, color: '#2f4f4f', designStyle: 'shadow' },
+        { name: 'Galaxy Grouper', baseValue: 39, color: '#4b0082', designStyle: 'electric' },
+        { name: 'Wisp Wrasse', baseValue: 35, color: '#696969', designStyle: 'shadow' },
+        { name: 'Nova Nase', baseValue: 38, color: '#9370db', designStyle: 'electric' },
+        { name: 'Specter Snapper', baseValue: 36, color: '#800080', designStyle: 'shadow' },
+        { name: 'Comet Carp', baseValue: 40, color: '#8a2be2', designStyle: 'electric' },
+        { name: 'Shade Shiner', baseValue: 37, color: '#2f4f4f', designStyle: 'shadow' },
+        { name: 'Stardust Sturgeon', baseValue: 39, color: '#ff1493', designStyle: 'glow' }
+    ],
+    Legendary: [
+        { name: 'Dragon Fin', baseValue: 50, color: '#ff6347', designStyle: 'fire' },
+        { name: 'Celestial Bass', baseValue: 55, color: '#00ced1', designStyle: 'electric' },
+        { name: 'Starfish', baseValue: 52, color: '#ffd700', designStyle: 'glow' },
+        { name: 'Titan Tuna', baseValue: 60, color: '#ff8c00', designStyle: 'fire' },
+        { name: 'Prismatic Perch', baseValue: 58, color: '#ff1493', designStyle: 'glow' },
+        { name: 'Leviathan Ling', baseValue: 56, color: '#191970', designStyle: 'shadow' },
+        { name: 'Phoenix Pike', baseValue: 54, color: '#ff4500', designStyle: 'fire' },
+        { name: 'Aurora Angler', baseValue: 57, color: '#00ffff', designStyle: 'electric' },
+        { name: 'Kraken Koi', baseValue: 59, color: '#4b0082', designStyle: 'shadow' },
+        { name: 'Solar Snapper', baseValue: 53, color: '#ffd700', designStyle: 'fire' },
+        { name: 'Lunar Loach', baseValue: 55, color: '#c0c0c0', designStyle: 'ice' },
+        { name: 'Titanic Trout', baseValue: 60, color: '#ff8c00', designStyle: 'fire' },
+        { name: 'Nebula Nase', baseValue: 58, color: '#9370db', designStyle: 'electric' },
+        { name: 'Behemoth Bass', baseValue: 56, color: '#2f4f4f', designStyle: 'shadow' },
+        { name: 'Solaris Snapper', baseValue: 54, color: '#ff6347', designStyle: 'fire' },
+        { name: 'Lunaria Ling', baseValue: 57, color: '#e0e0e0', designStyle: 'ice' },
+        { name: 'Colossus Cod', baseValue: 59, color: '#ff8c00', designStyle: 'fire' },
+        { name: 'Stellar Sturgeon', baseValue: 53, color: '#9370db', designStyle: 'electric' },
+        { name: 'Mythic Mackerel', baseValue: 55, color: '#ff1493', designStyle: 'glow' },
+        { name: 'Giant Grouper', baseValue: 60, color: '#ff6347', designStyle: 'fire' },
+        { name: 'Cosmic Cod', baseValue: 58, color: '#4b0082', designStyle: 'electric' },
+        { name: 'Divine Dace', baseValue: 56, color: '#ffd700', designStyle: 'glow' },
+        { name: 'Eternal Eel', baseValue: 54, color: '#191970', designStyle: 'shadow' },
+        { name: 'Immortal Ide', baseValue: 57, color: '#ff8c00', designStyle: 'fire' },
+        { name: 'Transcendent Trout', baseValue: 59, color: '#9370db', designStyle: 'electric' }
+    ],
+    Mythical: [
+        { name: 'Void Eel', baseValue: 80, color: '#191970', designStyle: 'shadow' },
+        { name: 'Ethereal Angelfish', baseValue: 85, color: '#da70d6', designStyle: 'glow' },
+        { name: 'Chronos Carp', baseValue: 88, color: '#4b0082', designStyle: 'electric' },
+        { name: 'Chaos Cod', baseValue: 82, color: '#800080', designStyle: 'shadow' },
+        { name: 'Elysian Eel', baseValue: 87, color: '#ff1493', designStyle: 'glow' },
+        { name: 'Abyssal Angler', baseValue: 90, color: '#000033', designStyle: 'shadow' },
+        { name: 'Paradise Pike', baseValue: 84, color: '#ffd700', designStyle: 'fire' },
+        { name: 'Nirvana Nase', baseValue: 89, color: '#9370db', designStyle: 'electric' },
+        { name: 'Valhalla Vimba', baseValue: 83, color: '#ff6347', designStyle: 'fire' },
+        { name: 'Olympus Oarfish', baseValue: 91, color: '#ff8c00', designStyle: 'fire' },
+        { name: 'Asgard Angelfish', baseValue: 86, color: '#00ced1', designStyle: 'electric' },
+        { name: 'Tartarus Trout', baseValue: 88, color: '#191970', designStyle: 'shadow' },
+        { name: 'Eden Eel', baseValue: 85, color: '#32cd32', designStyle: 'glow' },
+        { name: 'Purgatory Pike', baseValue: 87, color: '#ff4500', designStyle: 'fire' },
+        { name: 'Nirvana Nase II', baseValue: 90, color: '#9370db', designStyle: 'electric' },
+        { name: 'Heavenly Herring', baseValue: 84, color: '#ffd700', designStyle: 'glow' },
+        { name: 'Infernal Ide', baseValue: 89, color: '#ff6347', designStyle: 'fire' },
+        { name: 'Celestial Cod', baseValue: 86, color: '#00ffff', designStyle: 'electric' },
+        { name: 'Divine Dace', baseValue: 88, color: '#ff1493', designStyle: 'glow' },
+        { name: 'Sacred Snapper', baseValue: 91, color: '#ffd700', designStyle: 'fire' },
+        { name: 'Profane Pike', baseValue: 83, color: '#800080', designStyle: 'shadow' },
+        { name: 'Blessed Bass', baseValue: 87, color: '#00ced1', designStyle: 'electric' },
+        { name: 'Cursed Cod', baseValue: 85, color: '#191970', designStyle: 'shadow' },
+        { name: 'Hallowed Herring', baseValue: 89, color: '#ffd700', designStyle: 'glow' },
+        { name: 'Damned Dace', baseValue: 90, color: '#ff4500', designStyle: 'fire' }
+    ],
+    Universal: [
+        { name: 'Godfish', baseValue: 150, color: '#ff00ff', designStyle: 'glow' },
+        { name: 'Omnipotent Oarfish', baseValue: 180, color: '#ff1493', designStyle: 'electric' },
+        { name: 'Alpha Angler', baseValue: 160, color: '#ff00ff', designStyle: 'fire' },
+        { name: 'Omega Oarfish', baseValue: 175, color: '#9370db', designStyle: 'electric' },
+        { name: 'Infinity Ide', baseValue: 170, color: '#ff00ff', designStyle: 'glow' },
+        { name: 'Absolute Angelfish', baseValue: 185, color: '#ff1493', designStyle: 'electric' },
+        { name: 'Ultimate Unicornfish', baseValue: 165, color: '#ff00ff', designStyle: 'fire' },
+        { name: 'Perfect Pike', baseValue: 180, color: '#9370db', designStyle: 'electric' },
+        { name: 'Supreme Snapper', baseValue: 175, color: '#ff00ff', designStyle: 'glow' },
+        { name: 'Master Mackerel', baseValue: 190, color: '#ff1493', designStyle: 'electric' },
+        { name: 'Prime Perch', baseValue: 170, color: '#ff00ff', designStyle: 'fire' },
+        { name: 'Dominion Dace', baseValue: 185, color: '#9370db', designStyle: 'electric' },
+        { name: 'Sovereign Snapper', baseValue: 180, color: '#ff00ff', designStyle: 'glow' },
+        { name: 'Emperor Eel', baseValue: 175, color: '#ff1493', designStyle: 'electric' },
+        { name: 'Monarch Mackerel', baseValue: 190, color: '#ff00ff', designStyle: 'fire' },
+        { name: 'Ruler Ray', baseValue: 185, color: '#9370db', designStyle: 'electric' },
+        { name: 'Regent Roach', baseValue: 180, color: '#ff00ff', designStyle: 'glow' },
+        { name: 'Crown Cod', baseValue: 195, color: '#ff1493', designStyle: 'electric' },
+        { name: 'Throne Trout', baseValue: 190, color: '#ff00ff', designStyle: 'fire' },
+        { name: 'Scepter Snapper', baseValue: 185, color: '#9370db', designStyle: 'electric' },
+        { name: 'Diadem Dace', baseValue: 200, color: '#ff00ff', designStyle: 'glow' },
+        { name: 'Tiarra Tuna', baseValue: 195, color: '#ff1493', designStyle: 'electric' },
+        { name: 'Coronet Cod', baseValue: 190, color: '#ff00ff', designStyle: 'fire' },
+        { name: 'Crown Carp', baseValue: 200, color: '#9370db', designStyle: 'electric' },
+        { name: 'Apotheosis Angelfish', baseValue: 200, color: '#ff00ff', designStyle: 'glow' }
+    ]
+};
+
+// Flatten fish types for easy access
+const allFishTypes = Object.values(fishTypes).flat();
 
 // Rarity configuration - easily adjustable for testing
 const RARITY_CONFIG = {
@@ -115,21 +289,7 @@ const sizes = [
 
 // Generate random fish
 function generateFish() {
-    let type;
     const currentEvent = getCurrentEvent();
-    
-    // Check if we should spawn a special event fish
-    if (currentEvent && Math.random() < 0.3) { // 30% chance during events
-        const specialFishNames = currentEvent.specialFish;
-        const specialFishType = fishTypes.find(f => specialFishNames.includes(f.name));
-        if (specialFishType) {
-            type = specialFishType;
-        } else {
-            type = fishTypes[Math.floor(Math.random() * fishTypes.length)];
-        }
-    } else {
-        type = fishTypes[Math.floor(Math.random() * fishTypes.length)];
-    }
     
     // Select rarity based on chance
     let rarityRoll = Math.random();
@@ -141,6 +301,29 @@ function generateFish() {
             rarity = r;
             break;
         }
+    }
+    
+    // Get fish types for this rarity
+    const rarityFishTypes = fishTypes[rarity.name] || fishTypes.Common;
+    
+    // Check if we should spawn a special event fish
+    let type;
+    if (currentEvent && Math.random() < 0.3) { // 30% chance during events
+        const specialFishNames = currentEvent.specialFish;
+        const specialFishType = rarityFishTypes.find(f => specialFishNames.includes(f.name));
+        if (specialFishType) {
+            type = specialFishType;
+        } else {
+            // Fallback: try to find in all fish types
+            const allSpecialFish = allFishTypes.find(f => specialFishNames.includes(f.name));
+            if (allSpecialFish) {
+                type = allSpecialFish;
+            } else {
+                type = rarityFishTypes[Math.floor(Math.random() * rarityFishTypes.length)];
+            }
+        }
+    } else {
+        type = rarityFishTypes[Math.floor(Math.random() * rarityFishTypes.length)];
     }
     
     // Select size based on chance
@@ -170,6 +353,7 @@ function generateFish() {
         color: type.color,
         rarityColor: rarity.color,
         rarityData: rarity,
+        designStyle: type.designStyle || 'default',
         isEventFish: currentEvent && currentEvent.specialFish.includes(type.name)
     };
 }
@@ -975,8 +1159,8 @@ function drawFish(x, y, fish) {
     ctx.translate(x, y);
     ctx.rotate(rotation);
     
-    // Draw special effects for event/legendary/mythical fish (before translation)
-    const isSpecial = fish.isEventFish || fish.rarity === 'Legendary' || fish.rarity === 'Mythical';
+    // Draw special effects for event/legendary/mythical/universal fish (before translation)
+    const isSpecial = fish.isEventFish || fish.rarity === 'Legendary' || fish.rarity === 'Mythical' || fish.rarity === 'Universal';
     if (isSpecial) {
         drawFishSpecialEffects(0, 0, fish, size, px);
     }
@@ -1023,36 +1207,58 @@ function drawFishSpecialEffects(x, y, fish, size, px) {
             ctx.fillStyle = colors[i % colors.length];
             ctx.fillRect(Math.floor((x + particleX) / px) * px, Math.floor((y + particleY) / px) * px, px, px);
         }
+    } else if (fish.rarity === 'Universal') {
+        // Universal - intense multi-layered effects
+        // Outer rotating rings
+        for (let ring = 0; ring < 3; ring++) {
+            const ringPulse = 0.4 + Math.sin(time * 2 + ring) * 0.3;
+            const ringRadius = effectRadius * (0.8 + ring * 0.3) * ringPulse;
+            const ringColors = ['#ff00ff', '#ff1493', '#9370db'];
+            ctx.fillStyle = `rgba(255, 0, 255, ${ringPulse * 0.6})`;
+            for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 12) {
+                const ringX = Math.floor((Math.cos(angle + time * ring) * ringRadius) / px) * px;
+                const ringY = Math.floor((Math.sin(angle + time * ring) * ringRadius) / px) * px;
+                ctx.fillRect(x + ringX, y + ringY, px, px);
+            }
+        }
+        // Inner rotating particles
+        const universalColors = ['#ff00ff', '#ff1493', '#9370db', '#00ffff', '#ffff00'];
+        for (let i = 0; i < 16; i++) {
+            const angle = (i / 16) * Math.PI * 2 + time * 2;
+            const particleX = Math.cos(angle) * effectRadius * 0.6;
+            const particleY = Math.sin(angle) * effectRadius * 0.6;
+            ctx.fillStyle = universalColors[i % universalColors.length];
+            ctx.fillRect(Math.floor((x + particleX) / px) * px, Math.floor((y + particleY) / px) * px, px, px);
+        }
     }
 }
 
 // Draw fish by type with unique 8-bit designs
 function drawFishByType(x, y, fish, size, px) {
-    const fishName = fish.type.toLowerCase();
     const bodyColor = fish.color;
     const darkColor = darkenColor(bodyColor, 0.3);
     const lightColor = lightenColor(bodyColor, 0.3);
     
-    // Base fish body pattern (varies by type)
-    if (fishName.includes('glowfin') || fishName.includes('starfish')) {
-        // Glowing fish - bright with sparkles
-        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'glow');
-    } else if (fishName.includes('shadow') || fishName.includes('phantom')) {
-        // Shadow/phantom fish - darker with ethereal look
-        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'shadow');
-    } else if (fishName.includes('fire') || fishName.includes('dragon')) {
-        // Fire/dragon fish - angular and fierce
-        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'fire');
-    } else if (fishName.includes('ice') || fishName.includes('crystal')) {
-        // Ice/crystal fish - sharp and clear
-        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'ice');
-    } else if (fishName.includes('thunder') || fishName.includes('cosmic')) {
-        // Thunder/cosmic fish - electric look
-        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'electric');
-    } else {
-        // Default fish design
-        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'default');
+    // Use designStyle from fish data, or fallback to name-based detection
+    let style = fish.designStyle || 'default';
+    
+    // Fallback to name-based detection if designStyle not set
+    if (!fish.designStyle) {
+        const fishName = fish.type.toLowerCase();
+        if (fishName.includes('glowfin') || fishName.includes('starfish') || fishName.includes('glow') || fishName.includes('shimmer') || fishName.includes('sparkle')) {
+            style = 'glow';
+        } else if (fishName.includes('shadow') || fishName.includes('phantom') || fishName.includes('void') || fishName.includes('ghost')) {
+            style = 'shadow';
+        } else if (fishName.includes('fire') || fishName.includes('dragon') || fishName.includes('flame') || fishName.includes('blaze')) {
+            style = 'fire';
+        } else if (fishName.includes('ice') || fishName.includes('crystal') || fishName.includes('frost') || fishName.includes('glacier')) {
+            style = 'ice';
+        } else if (fishName.includes('thunder') || fishName.includes('cosmic') || fishName.includes('electric') || fishName.includes('lightning')) {
+            style = 'electric';
+        }
     }
+    
+    drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, style);
 }
 
 // Draw pixelated fish body
@@ -1674,8 +1880,8 @@ function renderFishSprite(fish) {
     const sizeMultiplier = fish.size === 'Tiny' ? 0.7 : fish.size === 'Small' ? 0.85 : fish.size === 'Large' ? 1.3 : fish.size === 'Huge' ? 1.8 : 1.0;
     const size = Math.floor(baseSize * sizeMultiplier / PIXEL_SIZE) * PIXEL_SIZE;
     
-    // Draw special effects for event/legendary/mythical fish
-    const isSpecial = fish.isEventFish || fish.rarity === 'Legendary' || fish.rarity === 'Mythical';
+    // Draw special effects for event/legendary/mythical/universal fish
+    const isSpecial = fish.isEventFish || fish.rarity === 'Legendary' || fish.rarity === 'Mythical' || fish.rarity === 'Universal';
     if (isSpecial) {
         drawFishSpecialEffects(spriteSize / 2, spriteSize / 2, fish, size, PIXEL_SIZE);
     }
@@ -2252,11 +2458,34 @@ function initGame() {
     window.removeEventListener('resize', resizeCanvas);
     window.addEventListener('resize', resizeCanvas);
     
+    // Function to close fish info and cast again
+    function closeFishInfoAndCast() {
+        const fishInfo = document.getElementById('fish-info');
+        if (fishInfo && !fishInfo.classList.contains('hidden')) {
+            fishInfo.classList.add('hidden');
+            // Cast again if not already casting/reeling
+            if (!gameState.isCasting && !gameState.isReeling && !gameState.qteActive) {
+                castLine();
+            }
+        }
+    }
+    
     // Spacebar casting (only when not in QTE)
+    // Also closes fish info menu if it's open
     document.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && !gameState.isCasting && !gameState.isReeling && !gameState.qteActive) {
-            e.preventDefault();
-            castLine();
+        if (e.code === 'Space') {
+            const fishInfo = document.getElementById('fish-info');
+            // If fish info is visible, close it and cast
+            if (fishInfo && !fishInfo.classList.contains('hidden')) {
+                e.preventDefault();
+                closeFishInfoAndCast();
+                return;
+            }
+            // Otherwise, normal casting behavior
+            if (!gameState.isCasting && !gameState.isReeling && !gameState.qteActive) {
+                e.preventDefault();
+                castLine();
+            }
         }
     });
 
@@ -2295,12 +2524,7 @@ function initGame() {
     // Continue button for fish info
     const continueButton = document.getElementById('continue-button');
     if (continueButton) {
-        continueButton.addEventListener('click', () => {
-            const fishInfo = document.getElementById('fish-info');
-            if (fishInfo) {
-                fishInfo.classList.add('hidden');
-            }
-        });
+        continueButton.addEventListener('click', closeFishInfoAndCast);
     }
 
     // Authentication handlers
