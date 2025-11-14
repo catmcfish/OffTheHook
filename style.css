@@ -893,6 +893,16 @@ body.nes-container::after {
         height: 70px;
     }
     
+    .settings-button {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .leaderboard-button {
+        width: 70px;
+        height: 70px;
+    }
+    
     .qte-button {
         width: 140px;
         height: 140px;
