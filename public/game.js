@@ -27,7 +27,10 @@ const gameState = {
     currentUser: null,
     settings: {
         rainEnabled: true,
-        grassEnabled: true
+        grassEnabled: true,
+        puddlesEnabled: true,
+        puddleCount: 5,
+        puddleSpawnRate: 3000
     }
 };
 
@@ -43,6 +46,9 @@ function resizeCanvas() {
         // Clear ripples on resize
         waterRipples = [];
         lastRippleSpawn = 0;
+        // Clear puddles on resize
+        puddles = [];
+        lastPuddleSpawn = 0;
     }
 }
 
@@ -159,6 +165,11 @@ let lastRippleSpawn = 0;
 const RIPPLE_SPAWN_INTERVAL = 1500; // Spawn a ripple every 1.5 seconds on average
 const RIPPLE_LIFETIME = 2000; // Ripples last 2 seconds
 
+// Puddles system
+let puddles = [];
+let lastPuddleSpawn = 0;
+const PUDDLE_LIFETIME = 10000; // Puddles last 10 seconds
+
 function spawnRipple() {
     if (!canvas) return;
     
@@ -177,6 +188,37 @@ function spawnRipple() {
         opacity: 0.6,
         spawnTime: Date.now(),
         lifetime: RIPPLE_LIFETIME
+    });
+}
+
+function spawnPuddle() {
+    if (!canvas) return;
+    
+    const landEndX = canvas.width * 0.4;
+    const beachStartY = canvas.height * 0.5;
+    const curveControlX = landEndX * 0.4;
+    const waterLevel = canvas.height * 0.6;
+    const curveControlY = waterLevel - 110;
+    const curveEndY = canvas.height;
+    
+    // Spawn puddle randomly on beach area (land side)
+    const x = Math.random() * landEndX * 0.8; // Within 80% of land width
+    const t = x / landEndX; // Parameter t from 0 to 1
+    const beachCurveY = (1 - t) * (1 - t) * beachStartY + 2 * (1 - t) * t * curveControlY + t * t * curveEndY;
+    
+    // Y position should be on or slightly below the beach curve
+    const y = beachCurveY + Math.random() * 30; // Slightly below the curve
+    
+    // Make sure puddle is within reasonable bounds
+    if (y < beachStartY || y > canvas.height - 20) return;
+    
+    puddles.push({
+        x: x,
+        y: y,
+        radius: 8 + Math.random() * 12, // Random size between 8-20
+        opacity: 0.4 + Math.random() * 0.3, // Random opacity between 0.4-0.7
+        spawnTime: Date.now(),
+        lifetime: PUDDLE_LIFETIME
     });
 }
 
@@ -264,6 +306,11 @@ function draw() {
         ctx.quadraticCurveTo(curveControlX, curveControlY + 8, landStartX, beachStartY + 8);
         ctx.closePath();
         ctx.fill();
+    }
+    
+    // Draw puddles on beach (if enabled and raining)
+    if (gameState.settings.puddlesEnabled && gameState.settings.rainEnabled) {
+        drawPuddles();
     }
     
     // Calculate character position on beach (standing on the curve)
@@ -499,6 +546,59 @@ function drawRipples() {
             ctx.beginPath();
             ctx.arc(ripple.x, ripple.y, ripple.radius * 0.6, 0, Math.PI * 2);
             ctx.stroke();
+        }
+    }
+}
+
+function drawPuddles() {
+    if (!canvas) return;
+    
+    const now = Date.now();
+    const spawnRate = gameState.settings.puddleSpawnRate || 3000;
+    const maxPuddles = gameState.settings.puddleCount || 5;
+    
+    // Spawn new puddles if we have fewer than max and enough time has passed
+    if (puddles.length < maxPuddles && now - lastPuddleSpawn > spawnRate + Math.random() * spawnRate) {
+        spawnPuddle();
+        lastPuddleSpawn = now;
+    }
+    
+    // Update and draw existing puddles
+    for (let i = puddles.length - 1; i >= 0; i--) {
+        const puddle = puddles[i];
+        
+        // Calculate age based on actual time
+        const age = now - puddle.spawnTime;
+        const progress = age / puddle.lifetime;
+        
+        if (progress >= 1) {
+            // Remove expired puddles
+            puddles.splice(i, 1);
+            continue;
+        }
+        
+        // Calculate opacity (fades out slightly over time)
+        const opacity = puddle.opacity * (1 - progress * 0.3); // Fade out slowly
+        
+        // Draw puddle (dark blue/water color)
+        ctx.fillStyle = `rgba(30, 60, 114, ${opacity})`;
+        ctx.beginPath();
+        ctx.arc(puddle.x, puddle.y, puddle.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw puddle edge (slightly darker)
+        ctx.strokeStyle = `rgba(15, 31, 61, ${opacity * 0.8})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(puddle.x, puddle.y, puddle.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Draw highlight on puddle (reflection)
+        if (puddle.radius > 5) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.2})`;
+            ctx.beginPath();
+            ctx.arc(puddle.x - puddle.radius * 0.3, puddle.y - puddle.radius * 0.3, puddle.radius * 0.4, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
 }
@@ -902,6 +1002,9 @@ async function loadUserData(username) {
                 gameState.settings = { 
                     rainEnabled: true,  // defaults
                     grassEnabled: true,
+                    puddlesEnabled: true,
+                    puddleCount: 5,
+                    puddleSpawnRate: 3000,
                     ...result.data.settings  // database settings override defaults
                 };
             }
@@ -953,12 +1056,24 @@ function saveSettings() {
 function updateSettingsUI() {
     const rainToggle = document.getElementById('setting-rain');
     const grassToggle = document.getElementById('setting-grass');
+    const puddlesToggle = document.getElementById('setting-puddles');
+    const puddleCountInput = document.getElementById('setting-puddle-count');
+    const puddleSpawnRateInput = document.getElementById('setting-puddle-spawn-rate');
     
     if (rainToggle) {
         rainToggle.checked = gameState.settings.rainEnabled;
     }
     if (grassToggle) {
         grassToggle.checked = gameState.settings.grassEnabled;
+    }
+    if (puddlesToggle) {
+        puddlesToggle.checked = gameState.settings.puddlesEnabled;
+    }
+    if (puddleCountInput) {
+        puddleCountInput.value = gameState.settings.puddleCount || 5;
+    }
+    if (puddleSpawnRateInput) {
+        puddleSpawnRateInput.value = gameState.settings.puddleSpawnRate || 3000;
     }
 }
 
@@ -1266,6 +1381,9 @@ function initGame() {
     const settingsClose = document.getElementById('settings-close');
     const rainToggle = document.getElementById('setting-rain');
     const grassToggle = document.getElementById('setting-grass');
+    const puddlesToggle = document.getElementById('setting-puddles');
+    const puddleCountInput = document.getElementById('setting-puddle-count');
+    const puddleSpawnRateInput = document.getElementById('setting-puddle-spawn-rate');
     const logoutButton = document.getElementById('logout-button');
     
     settingsButton?.addEventListener('click', () => {
@@ -1284,6 +1402,33 @@ function initGame() {
     
     grassToggle?.addEventListener('change', (e) => {
         gameState.settings.grassEnabled = e.target.checked;
+        saveSettings();
+    });
+    
+    puddlesToggle?.addEventListener('change', (e) => {
+        gameState.settings.puddlesEnabled = e.target.checked;
+        if (!e.target.checked) {
+            // Clear puddles when disabled
+            puddles = [];
+        }
+        saveSettings();
+    });
+    
+    puddleCountInput?.addEventListener('change', (e) => {
+        const count = parseInt(e.target.value) || 5;
+        gameState.settings.puddleCount = Math.max(1, Math.min(20, count)); // Clamp between 1-20
+        e.target.value = gameState.settings.puddleCount;
+        // Remove excess puddles if count was reduced
+        if (puddles.length > gameState.settings.puddleCount) {
+            puddles = puddles.slice(0, gameState.settings.puddleCount);
+        }
+        saveSettings();
+    });
+    
+    puddleSpawnRateInput?.addEventListener('change', (e) => {
+        const rate = parseInt(e.target.value) || 3000;
+        gameState.settings.puddleSpawnRate = Math.max(500, Math.min(10000, rate)); // Clamp between 500ms-10s
+        e.target.value = gameState.settings.puddleSpawnRate;
         saveSettings();
     });
     
