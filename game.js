@@ -86,13 +86,13 @@ const fishTypes = [
 
 // Rarity configuration - easily adjustable for testing
 const RARITY_CONFIG = {
-    Common: { multiplier: 1.0, color: '#95a5a6', chance: 0.0, qteTime: 1.5, qteRequired: 3 },
-    Uncommon: { multiplier: 1.5, color: '#2ecc71', chance: 0.0, qteTime: 1.25, qteRequired: 4 },
-    Rare: { multiplier: 2.5, color: '#3498db', chance: 0.0, qteTime: 1.0, qteRequired: 5 },
-    Epic: { multiplier: 4.0, color: '#9b59b6', chance: 0.00, qteTime: 0.9, qteRequired: 6 },
-    Legendary: { multiplier: 7.0, color: '#f39c12', chance: 0.00, qteTime: 0.9, qteRequired: 10 },
-    Mythical: { multiplier: 12.0, color: '#e74c3c', chance: 0.000, qteTime: 0.9, qteRequired: 20 },
-    Universal: { multiplier: 20.0, color: '#ff00ff', chance: 1.000, qteTime: 0.9, qteRequired: 50 }
+    Common: { multiplier: 1.0, color: '#95a5a6', chance: 0.5, qteTime: 1.5, qteRequired: 3 },
+    Uncommon: { multiplier: 1.5, color: '#2ecc71', chance: 0.3, qteTime: 1.25, qteRequired: 4 },
+    Rare: { multiplier: 2.5, color: '#3498db', chance: 0.15, qteTime: 1.0, qteRequired: 5 },
+    Epic: { multiplier: 4.0, color: '#9b59b6', chance: 0.04, qteTime: 0.9, qteRequired: 6 },
+    Legendary: { multiplier: 7.0, color: '#f39c12', chance: 0.01, qteTime: 0.9, qteRequired: 10 },
+    Mythical: { multiplier: 12.0, color: '#e74c3c', chance: 0.005, qteTime: 0.9, qteRequired: 20 },
+    Universal: { multiplier: 20.0, color: '#ff00ff', chance: 0.001, qteTime: 0.9, qteRequired: 50 }
 };
 
 // Rarity system with QTE difficulty - built from config
