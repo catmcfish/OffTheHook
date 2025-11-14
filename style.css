@@ -2,6 +2,13 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    /* Hide scrollbars on all scrollable elements for immersion */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 body {
@@ -164,6 +171,13 @@ body.nes-container::after {
     overflow-y: auto;
     padding: 20px;
     position: relative;
+    /* Hide scrollbar but keep scrolling */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.backpack-content::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .backpack-header {
@@ -617,6 +631,13 @@ body.nes-container::after {
     gap: 10px;
     max-height: 60vh;
     overflow-y: auto;
+    /* Hide scrollbar but keep scrolling */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.leaderboard-list::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .leaderboard-item {

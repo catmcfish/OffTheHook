@@ -348,20 +348,29 @@ function draw() {
     
     lastFrameTime = now;
     
-    // Draw rain (if enabled) - use time-based updates so it continues even when paused
+    // Draw rain (if enabled) - 8-bit pixelated style
     if (gameState.settings.rainEnabled) {
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-        ctx.lineWidth = 1;
+        const rainPixelSize = 2; // Size of each rain pixel
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        
         rainParticles.forEach((particle, i) => {
-            ctx.beginPath();
-            ctx.moveTo(particle.x, particle.y);
-            ctx.lineTo(particle.x, particle.y + 10);
-            ctx.stroke();
+            // Draw rain as pixel blocks (vertical line of pixels)
+            const rainLength = 8; // Length of rain drop in pixels
+            const pixelX = Math.floor(particle.x / rainPixelSize) * rainPixelSize;
+            const pixelY = Math.floor(particle.y / rainPixelSize) * rainPixelSize;
+            
+            // Draw vertical line of pixels for 8-bit rain
+            for (let j = 0; j < rainLength; j++) {
+                const yPos = pixelY + (j * rainPixelSize);
+                if (yPos >= 0 && yPos < canvas.height) {
+                    ctx.fillRect(pixelX, yPos, rainPixelSize, rainPixelSize);
+                }
+            }
             
             // Update based on actual time elapsed, not frame count
             particle.y += particle.speed * deltaTime;
-            if (particle.y > canvas.height) {
-                particle.y = -10;
+            if (particle.y > canvas.height + (rainLength * rainPixelSize)) {
+                particle.y = -(rainLength * rainPixelSize);
                 particle.x = Math.random() * canvas.width;
             }
         });
@@ -2122,6 +2131,103 @@ async function displayLeaderboard() {
     } catch (error) {
         console.error('Error loading leaderboard:', error);
         leaderboardList.innerHTML = '<div style="text-align: center; color: #e74c3c; padding: 20px;">Error loading leaderboard</div>';
+    }
+}
+
+// 8-bit Icon Drawing Functions - Beveled frame style with shading
+function create8BitIcon(iconType, displaySize = 32) {
+    // Use 8x8 pixel grid, scale up for crisp rendering
+    const gridSize = 8;
+    const scale = 4; // Scale factor for crisp pixels
+    const canvas = document.createElement('canvas');
+    canvas.width = gridSize * scale;
+    canvas.height = gridSize * scale;
+    const ctx = canvas.getContext('2d');
+    
+    // CRITICAL: Disable image smoothing for true pixel art
+    ctx.imageSmoothingEnabled = false;
+    ctx.webkitImageSmoothingEnabled = false;
+    ctx.mozImageSmoothingEnabled = false;
+    ctx.msImageSmoothingEnabled = false;
+    
+    const px = scale; // Each pixel in the grid is scale x scale pixels
+    
+    // Color palette: 0=transparent, 1=light grey (icon highlight), 2=medium grey (icon), 3=dark grey (icon shadow), 4=black (outline), 5=light bg (bevel highlight), 6=medium bg, 7=dark bg (bevel shadow)
+    const colors = {
+        0: 'transparent',
+        1: '#e0e0e0', // Light grey - icon highlight
+        2: '#b0b0b0', // Medium grey - icon base
+        3: '#808080', // Dark grey - icon shadow
+        4: '#000000', // Black - outline
+        5: '#c0c0c0', // Light bg - bevel highlight
+        6: '#808080', // Medium bg - frame
+        7: '#606060'  // Dark bg - bevel shadow
+    };
+    
+    let iconPixels;
+    
+    switch(iconType) {
+        case 'backpack':
+            // 8-bit backpack icon - clear backpack with top flap and side straps
+            iconPixels = [
+                [5,5,5,5,5,5,5,5], // Top bevel highlight
+                [5,6,6,6,6,6,6,7], // Frame top
+                [5,6,4,4,4,4,6,7], // Flap outline (black)
+                [5,6,4,1,1,4,6,7], // Flap highlight (light grey)
+                [5,6,4,2,2,4,6,7], // Flap base (medium grey)
+                [5,6,4,6,6,4,6,7], // Straps area (background color shows through)
+                [5,6,4,2,2,4,6,7], // Main body
+                [7,7,7,7,7,7,7,7]  // Bottom bevel shadow
+            ];
+            break;
+            
+        case 'settings':
+            // 8-bit gear icon - clear gear with visible teeth around perimeter
+            iconPixels = [
+                [5,5,5,5,5,5,5,5], // Top bevel highlight
+                [5,6,4,1,1,4,6,7], // Top teeth (light grey with black outline)
+                [5,6,1,4,4,1,6,7], // Gear rim (light grey outline, background center)
+                [5,6,4,2,2,4,6,7], // Gear body (medium grey with black outline)
+                [5,6,4,3,3,4,6,7], // Gear center shadow (dark grey)
+                [5,6,1,4,4,1,6,7], // Bottom rim
+                [5,6,4,1,1,4,6,7], // Bottom teeth
+                [7,7,7,7,7,7,7,7]  // Bottom bevel shadow
+            ];
+            break;
+            
+        case 'leaderboard':
+            // 8-bit trophy icon - clear trophy cup with handles and base
+            iconPixels = [
+                [5,5,5,5,5,5,5,5], // Top bevel highlight
+                [5,6,4,4,4,4,6,7], // Trophy rim outline (black)
+                [5,6,4,1,1,4,6,7], // Cup rim highlight (light grey)
+                [5,6,4,2,2,4,6,7], // Cup top (medium grey)
+                [5,6,2,6,6,2,6,7], // Cup with handles (background shows handles)
+                [5,6,4,2,2,4,6,7], // Cup body
+                [5,6,4,3,3,4,6,7], // Stem/pedestal (dark grey shadow)
+                [7,7,7,7,7,7,7,7]  // Bottom bevel shadow
+            ];
+            break;
+    }
+    
+    // Draw beveled frame and icon
+    drawBeveledIcon(ctx, iconPixels, colors, px);
+    
+    return canvas.toDataURL();
+}
+
+function drawBeveledIcon(ctx, pixels, colors, px) {
+    // Draw each pixel with its assigned color
+    for (let row = 0; row < pixels.length; row++) {
+        for (let col = 0; col < pixels[row].length; col++) {
+            const pixelValue = pixels[row][col];
+            if (pixelValue !== 0) {
+                const x = Math.floor(col * px);
+                const y = Math.floor(row * px);
+                ctx.fillStyle = colors[pixelValue] || '#ffffff';
+                ctx.fillRect(x, y, px, px);
+            }
+        }
     }
 }
 
