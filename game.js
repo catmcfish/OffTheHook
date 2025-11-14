@@ -1063,12 +1063,14 @@ async function loadUserData(username) {
         } else {
             // Load from localStorage if API fails
             loadSettings();
+            gameState.isAdmin = false; // Not admin if no database data
             updateSettingsUI();
         }
     } catch (error) {
         console.error('Error loading user data:', error);
         // Load from localStorage as fallback
         loadSettings();
+        gameState.isAdmin = false; // Not admin if error loading
         updateSettingsUI();
     }
 }
@@ -1109,7 +1111,7 @@ function updateSettingsUI() {
         grassToggle.checked = gameState.settings.grassEnabled;
     }
     
-    // Update admin panel if visible
+    // Always update admin panel visibility
     updateAdminPanel();
 }
 
@@ -1119,28 +1121,33 @@ function updateAdminPanel() {
     const timeInfo = document.getElementById('admin-time-info');
     const eventInfo = document.getElementById('admin-event-info');
     
-    if (!adminPanelSection || !adminPanel || !timeInfo || !eventInfo) return;
+    if (!adminPanelSection) return;
     
+    // Always set visibility based on admin status
     if (gameState.isAdmin) {
         adminPanelSection.classList.remove('hidden');
-        const timeInfoData = getTimeOfDayInfo();
-        const event = getCurrentEvent();
         
-        timeInfo.innerHTML = `
-            <strong>Current Time:</strong> ${timeInfoData.timeString}<br>
-            <strong>Date:</strong> ${timeInfoData.dateString}<br>
-            <strong>Phase:</strong> <span style="text-transform: capitalize; color: #3498db;">${timeInfoData.phase}</span> (Hour: ${timeInfoData.hour})
-        `;
-        
-        if (event) {
-            eventInfo.innerHTML = `
-                <strong>Active Event:</strong> ${event.name}<br>
-                <strong>Description:</strong> ${event.description}<br>
-                <strong>Special Fish:</strong> ${event.specialFish.join(', ')}<br>
-                <strong>Value Multiplier:</strong> ${event.multiplier}x
+        // Update content if elements exist
+        if (adminPanel && timeInfo && eventInfo) {
+            const timeInfoData = getTimeOfDayInfo();
+            const event = getCurrentEvent();
+            
+            timeInfo.innerHTML = `
+                <strong>Current Time:</strong> ${timeInfoData.timeString}<br>
+                <strong>Date:</strong> ${timeInfoData.dateString}<br>
+                <strong>Phase:</strong> <span style="text-transform: capitalize; color: #3498db;">${timeInfoData.phase}</span> (Hour: ${timeInfoData.hour})
             `;
-        } else {
-            eventInfo.innerHTML = '<em>No active event</em>';
+            
+            if (event) {
+                eventInfo.innerHTML = `
+                    <strong>Active Event:</strong> ${event.name}<br>
+                    <strong>Description:</strong> ${event.description}<br>
+                    <strong>Special Fish:</strong> ${event.specialFish.join(', ')}<br>
+                    <strong>Value Multiplier:</strong> ${event.multiplier}x
+                `;
+            } else {
+                eventInfo.innerHTML = '<em>No active event</em>';
+            }
         }
     } else {
         adminPanelSection.classList.add('hidden');
@@ -1482,6 +1489,9 @@ function initGame() {
     
     // Load settings on init
     loadSettings();
+    // Ensure admin panel is hidden initially
+    gameState.isAdmin = false;
+    updateAdminPanel();
     updateSettingsUI();
     
     // Allow Enter key to submit forms
