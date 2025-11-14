@@ -27,12 +27,11 @@ const gameState = {
     currentUser: null,
     settings: {
         rainEnabled: true,
-        grassEnabled: true,
-        adminPassword: '' // Set by user for admin access
+        grassEnabled: true
     },
     timeOfDay: 'day', // 'morning', 'noon', 'afternoon', 'night'
     currentEvent: null, // Current synchronous event
-    isAdmin: false,
+    isAdmin: false, // Set from database userData.isAdmin
     adminPanelInterval: null // Interval for updating admin panel
 };
 
@@ -1036,12 +1035,14 @@ async function loadUserData(username) {
             gameState.fishCount = result.data.fishCount || 0;
             gameState.inventory = result.data.inventory || [];
             
+            // Load admin status from database
+            gameState.isAdmin = result.data.isAdmin === true;
+            
             // Load settings from database (primary source)
             if (result.data.settings) {
                 gameState.settings = { 
                     rainEnabled: true,  // defaults
                     grassEnabled: true,
-                    adminPassword: '',
                     ...result.data.settings  // database settings override defaults
                 };
             }
@@ -1052,6 +1053,13 @@ async function loadUserData(username) {
             updateUI();
             updateBackpack();
             updateSettingsUI();
+            
+            // Start admin panel updates if admin
+            if (gameState.isAdmin && !gameState.adminPanelInterval) {
+                gameState.adminPanelInterval = setInterval(() => {
+                    updateAdminPanel();
+                }, 1000);
+            }
         } else {
             // Load from localStorage if API fails
             loadSettings();
@@ -1106,14 +1114,15 @@ function updateSettingsUI() {
 }
 
 function updateAdminPanel() {
+    const adminPanelSection = document.getElementById('admin-panel-section');
     const adminPanel = document.getElementById('admin-panel');
     const timeInfo = document.getElementById('admin-time-info');
     const eventInfo = document.getElementById('admin-event-info');
     
-    if (!adminPanel || !timeInfo || !eventInfo) return;
+    if (!adminPanelSection || !adminPanel || !timeInfo || !eventInfo) return;
     
     if (gameState.isAdmin) {
-        adminPanel.classList.remove('hidden');
+        adminPanelSection.classList.remove('hidden');
         const timeInfoData = getTimeOfDayInfo();
         const event = getCurrentEvent();
         
@@ -1134,7 +1143,7 @@ function updateAdminPanel() {
             eventInfo.innerHTML = '<em>No active event</em>';
         }
     } else {
-        adminPanel.classList.add('hidden');
+        adminPanelSection.classList.add('hidden');
     }
 }
 
@@ -1461,71 +1470,6 @@ function initGame() {
     grassToggle?.addEventListener('change', (e) => {
         gameState.settings.grassEnabled = e.target.checked;
         saveSettings();
-    });
-    
-    // Admin panel handlers
-    const adminPasswordInput = document.getElementById('admin-password-input');
-    const adminLoginButton = document.getElementById('admin-login-button');
-    const adminLogoutButton = document.getElementById('admin-logout-button');
-    
-    adminLoginButton?.addEventListener('click', () => {
-        const password = adminPasswordInput?.value || '';
-        const savedPassword = gameState.settings.adminPassword || '';
-        
-        if (!savedPassword) {
-            // First time setup - save the password
-            if (password.length < 4) {
-                alert('Password must be at least 4 characters');
-                return;
-            }
-            gameState.settings.adminPassword = password;
-            gameState.isAdmin = true;
-            saveSettings();
-            adminPasswordInput.value = '';
-            updateAdminPanel();
-            // Start updating admin panel every second
-            if (!gameState.adminPanelInterval) {
-                gameState.adminPanelInterval = setInterval(() => {
-                    if (gameState.isAdmin) {
-                        updateAdminPanel();
-                    }
-                }, 1000);
-            }
-        } else {
-            // Check password
-            if (password === savedPassword) {
-                gameState.isAdmin = true;
-                adminPasswordInput.value = '';
-                updateAdminPanel();
-                // Start updating admin panel every second
-                if (!gameState.adminPanelInterval) {
-                    gameState.adminPanelInterval = setInterval(() => {
-                        if (gameState.isAdmin) {
-                            updateAdminPanel();
-                        }
-                    }, 1000);
-                }
-            } else {
-                alert('Incorrect password');
-                adminPasswordInput.value = '';
-            }
-        }
-    });
-    
-    adminLogoutButton?.addEventListener('click', () => {
-        gameState.isAdmin = false;
-        updateAdminPanel();
-        if (gameState.adminPanelInterval) {
-            clearInterval(gameState.adminPanelInterval);
-            gameState.adminPanelInterval = null;
-        }
-    });
-    
-    // Allow Enter key to submit admin login
-    adminPasswordInput?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            adminLoginButton.click();
-        }
     });
     
     logoutButton?.addEventListener('click', async () => {
