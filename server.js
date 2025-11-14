@@ -489,13 +489,16 @@ expressApp.get('/health', async (req, res) => {
     }
 });
 
+// Determine if we're in Docker (public exists) or local dev (root files)
+const publicDir = fs.existsSync('public') ? 'public' : '.';
+
 // Explicitly serve index.html at root
 expressApp.get('/', (req, res) => {
-    res.sendFile('index.html', { root: 'public' });
+    res.sendFile('index.html', { root: publicDir });
 });
 
 // Serve static files (CSS, JS, images, etc.)
-expressApp.use(express.static('public'));
+expressApp.use(express.static(publicDir));
 
 // Serve index.html for all non-API routes (SPA routing)
 expressApp.get('*', (req, res, next) => {
@@ -504,7 +507,7 @@ expressApp.get('*', (req, res, next) => {
         return next();
     }
     // Serve index.html for all other routes
-    res.sendFile('index.html', { root: 'public' }, (err) => {
+    res.sendFile('index.html', { root: publicDir }, (err) => {
         if (err) {
             console.error('Error serving index.html:', err);
             res.status(500).send('Error loading page');

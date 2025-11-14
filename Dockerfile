@@ -12,12 +12,11 @@ RUN npm install --omit=dev
 COPY server.js ./
 
 # Copy frontend files (from root, which are in git)
-COPY index.html game.js style.css ./
+COPY index.html game.js style.css config.js ./
 
 # Create public directory and copy files
 RUN mkdir -p public && \
-    cp index.html game.js style.css public/ && \
-    echo 'const API_BASE_URL = window.location.origin;' > public/config.js
+    cp index.html game.js style.css config.js public/
 
 # Verify files are copied
 RUN ls -la public/

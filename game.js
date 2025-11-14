@@ -147,6 +147,7 @@ function generateFish() {
 
 // Rain particles
 let rainParticles = [];
+let lastFrameTime = Date.now();
 
 function initRainParticles() {
     rainParticles = [];
@@ -157,6 +158,7 @@ function initRainParticles() {
             speed: 2 + Math.random() * 3
         });
     }
+    lastFrameTime = Date.now();
 }
 
 // Water ripples system
@@ -242,8 +244,12 @@ function draw() {
     ctx.fillStyle = skyGradient;
     ctx.fillRect(0, 0, canvas.width, skyHeight);
     
-    // Draw rain (if enabled)
+    // Draw rain (if enabled) - use time-based updates so it continues even when paused
     if (gameState.settings.rainEnabled) {
+        const now = Date.now();
+        const deltaTime = Math.min((now - lastFrameTime) / 16.67, 100); // Cap at 100ms to prevent huge jumps
+        lastFrameTime = now;
+        
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
         ctx.lineWidth = 1;
         rainParticles.forEach((particle, i) => {
@@ -252,12 +258,16 @@ function draw() {
             ctx.lineTo(particle.x, particle.y + 10);
             ctx.stroke();
             
-            particle.y += particle.speed;
+            // Update based on actual time elapsed, not frame count
+            particle.y += particle.speed * (deltaTime / 16.67); // Normalize to 60fps
             if (particle.y > canvas.height) {
                 particle.y = -10;
                 particle.x = Math.random() * canvas.width;
             }
         });
+    } else {
+        // Still update lastFrameTime even when rain is disabled to prevent time jumps
+        lastFrameTime = Date.now();
     }
     
     // Draw water (dark blue) - fills right side and below beach curve
