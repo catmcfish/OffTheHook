@@ -158,7 +158,7 @@ function initRainParticles() {
 // Water ripples system
 let waterRipples = [];
 let lastRippleSpawn = 0;
-const RIPPLE_SPAWN_INTERVAL = 1500; // Spawn a ripple every 1.5 seconds on average
+const RIPPLE_SPAWN_INTERVAL = 150; // Spawn a ripple every 1.5 seconds on average
 const RIPPLE_LIFETIME = 2000; // Ripples last 2 seconds
 
 function spawnRipple() {
