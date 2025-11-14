@@ -27,8 +27,13 @@ const gameState = {
     currentUser: null,
     settings: {
         rainEnabled: true,
-        grassEnabled: true
-    }
+        grassEnabled: true,
+        adminPassword: '' // Set by user for admin access
+    },
+    timeOfDay: 'day', // 'morning', 'noon', 'afternoon', 'night'
+    currentEvent: null, // Current synchronous event
+    isAdmin: false,
+    adminPanelInterval: null // Interval for updating admin panel
 };
 
 // Canvas setup - will be initialized when DOM is ready
@@ -99,7 +104,21 @@ const sizes = [
 
 // Generate random fish
 function generateFish() {
-    const type = fishTypes[Math.floor(Math.random() * fishTypes.length)];
+    let type;
+    const currentEvent = getCurrentEvent();
+    
+    // Check if we should spawn a special event fish
+    if (currentEvent && Math.random() < 0.3) { // 30% chance during events
+        const specialFishNames = currentEvent.specialFish;
+        const specialFishType = fishTypes.find(f => specialFishNames.includes(f.name));
+        if (specialFishType) {
+            type = specialFishType;
+        } else {
+            type = fishTypes[Math.floor(Math.random() * fishTypes.length)];
+        }
+    } else {
+        type = fishTypes[Math.floor(Math.random() * fishTypes.length)];
+    }
     
     // Select rarity based on chance
     let rarityRoll = Math.random();
@@ -125,8 +144,12 @@ function generateFish() {
         }
     }
     
-    // Calculate value
-    const value = Math.floor(type.baseValue * rarity.multiplier * size.multiplier);
+    // Calculate value with event multiplier
+    let valueMultiplier = 1.0;
+    if (currentEvent) {
+        valueMultiplier = currentEvent.multiplier;
+    }
+    const value = Math.floor(type.baseValue * rarity.multiplier * size.multiplier * valueMultiplier);
     
     return {
         type: type.name,
@@ -135,7 +158,8 @@ function generateFish() {
         value: value,
         color: type.color,
         rarityColor: rarity.color,
-        rarityData: rarity
+        rarityData: rarity,
+        isEventFish: currentEvent && currentEvent.specialFish.includes(type.name)
     };
 }
 
@@ -149,7 +173,7 @@ function initRainParticles() {
         rainParticles.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            speed: 6 + Math.random() * 3
+            speed: 30 + Math.random() * 3
         });
     }
     lastFrameTime = Date.now();
@@ -184,6 +208,68 @@ function spawnRipple() {
 
 // Rain particles will be initialized when canvas is ready
 
+// Time of day system
+function getTimeOfDay() {
+    const now = new Date();
+    const hour = now.getHours();
+    
+    if (hour >= 5 && hour < 9) {
+        return 'morning';
+    } else if (hour >= 9 && hour < 13) {
+        return 'noon';
+    } else if (hour >= 13 && hour < 18) {
+        return 'afternoon';
+    } else {
+        return 'night';
+    }
+}
+
+function getTimeOfDayInfo() {
+    const now = new Date();
+    const timeOfDay = getTimeOfDay();
+    return {
+        phase: timeOfDay,
+        hour: now.getHours(),
+        minute: now.getMinutes(),
+        second: now.getSeconds(),
+        timeString: now.toLocaleTimeString(),
+        dateString: now.toLocaleDateString()
+    };
+}
+
+// Synchronous events system
+const SYNCHRONOUS_EVENTS = {
+    morning: {
+        name: 'Dawn Fishing',
+        description: 'Special fish appear during morning hours!',
+        specialFish: ['Glowfin', 'Crystal Scale'],
+        multiplier: 1.2
+    },
+    noon: {
+        name: 'Midday Bounty',
+        description: 'Increased chance of rare fish!',
+        specialFish: ['Fire Gills', 'Thunder Trout'],
+        multiplier: 1.5
+    },
+    afternoon: {
+        name: 'Afternoon Delight',
+        description: 'Epic fish are more common!',
+        specialFish: ['Dragon Fin', 'Celestial Bass'],
+        multiplier: 1.3
+    },
+    night: {
+        name: 'Midnight Mystery',
+        description: 'Legendary fish emerge from the depths!',
+        specialFish: ['Shadow Serpent', 'Void Eel', 'Phantom Pike'],
+        multiplier: 2.0
+    }
+};
+
+function getCurrentEvent() {
+    const timeOfDay = getTimeOfDay();
+    return SYNCHRONOUS_EVENTS[timeOfDay] || null;
+}
+
 // Draw game
 function draw() {
     if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) {
@@ -194,11 +280,40 @@ function draw() {
     ctx.fillStyle = '#2c3e50';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Draw sky (dark grey, overcast) - fills top portion
+    // Update time of day
+    gameState.timeOfDay = getTimeOfDay();
+    gameState.currentEvent = getCurrentEvent();
+    
+    // Draw sky based on time of day
     const skyHeight = canvas.height * 0.6;
     const skyGradient = ctx.createLinearGradient(0, 0, 0, skyHeight);
-    skyGradient.addColorStop(0, '#4a5568');
-    skyGradient.addColorStop(1, '#2d3748');
+    
+    // Sky colors for different times of day
+    let topColor, bottomColor;
+    switch (gameState.timeOfDay) {
+        case 'morning':
+            topColor = '#ff9a56'; // Orange-pink sunrise
+            bottomColor = '#ffd89b'; // Light orange
+            break;
+        case 'noon':
+            topColor = '#87ceeb'; // Sky blue
+            bottomColor = '#e0f6ff'; // Light blue
+            break;
+        case 'afternoon':
+            topColor = '#ffa500'; // Orange
+            bottomColor = '#ffd700'; // Gold
+            break;
+        case 'night':
+            topColor = '#191970'; // Midnight blue
+            bottomColor = '#000033'; // Very dark blue
+            break;
+        default:
+            topColor = '#4a5568';
+            bottomColor = '#2d3748';
+    }
+    
+    skyGradient.addColorStop(0, topColor);
+    skyGradient.addColorStop(1, bottomColor);
     ctx.fillStyle = skyGradient;
     ctx.fillRect(0, 0, canvas.width, skyHeight);
     
@@ -360,10 +475,21 @@ function draw() {
             ctx.stroke();
         }
         
-        // Draw fish if caught (with struggling animation)
+        // Draw fish if caught (with struggling animation, moving towards player)
         if (gameState.currentFish && gameState.isReeling) {
-            const fishX = lineEndX + Math.sin(gameState.struggleAnimation) * 12;
-            const fishY = lineEndY + Math.cos(gameState.struggleAnimation * 0.7) * 8;
+            // Calculate how close the fish is to being reeled in (0 = far, 1 = close)
+            const reelProgress = 1 - (gameState.lineDepth / gameState.maxDepth);
+            
+            // Interpolate between line end position and character position
+            // As reelProgress increases, fish moves closer to character
+            const targetX = lineStartX;
+            const targetY = lineStartY;
+            const fishBaseX = lineEndX + (targetX - lineEndX) * reelProgress;
+            const fishBaseY = lineEndY + (targetY - lineEndY) * reelProgress;
+            
+            // Add struggle animation on top of the base position
+            const fishX = fishBaseX + Math.sin(gameState.struggleAnimation) * 12;
+            const fishY = fishBaseY + Math.cos(gameState.struggleAnimation * 0.7) * 8;
             drawFish(fishX, fishY, gameState.currentFish);
             
             // Update struggle animation
@@ -808,11 +934,14 @@ function showFishInfo() {
     const fishDetails = document.getElementById('fish-details');
     const fish = gameState.currentFish;
     
+    const eventBadge = fish.isEventFish ? '<div style="color: #f39c12; font-weight: bold; margin-top: 5px;">⭐ Event Fish!</div>' : '';
+    
     fishDetails.innerHTML = `
         <div class="fish-name" style="color: ${fish.rarityColor}">${fish.type}</div>
         <div class="fish-attribute">Rarity: <span class="rarity-${fish.rarity.toLowerCase()}">${fish.rarity}</span></div>
         <div class="fish-attribute">Size: ${fish.size}</div>
         <div class="fish-attribute">Value: <span style="color: #f39c12">${fish.value} gold</span></div>
+        ${eventBadge}
     `;
     
     fishInfo.classList.remove('hidden');
@@ -912,6 +1041,7 @@ async function loadUserData(username) {
                 gameState.settings = { 
                     rainEnabled: true,  // defaults
                     grassEnabled: true,
+                    adminPassword: '',
                     ...result.data.settings  // database settings override defaults
                 };
             }
@@ -969,6 +1099,42 @@ function updateSettingsUI() {
     }
     if (grassToggle) {
         grassToggle.checked = gameState.settings.grassEnabled;
+    }
+    
+    // Update admin panel if visible
+    updateAdminPanel();
+}
+
+function updateAdminPanel() {
+    const adminPanel = document.getElementById('admin-panel');
+    const timeInfo = document.getElementById('admin-time-info');
+    const eventInfo = document.getElementById('admin-event-info');
+    
+    if (!adminPanel || !timeInfo || !eventInfo) return;
+    
+    if (gameState.isAdmin) {
+        adminPanel.classList.remove('hidden');
+        const timeInfoData = getTimeOfDayInfo();
+        const event = getCurrentEvent();
+        
+        timeInfo.innerHTML = `
+            <strong>Current Time:</strong> ${timeInfoData.timeString}<br>
+            <strong>Date:</strong> ${timeInfoData.dateString}<br>
+            <strong>Phase:</strong> <span style="text-transform: capitalize; color: #3498db;">${timeInfoData.phase}</span> (Hour: ${timeInfoData.hour})
+        `;
+        
+        if (event) {
+            eventInfo.innerHTML = `
+                <strong>Active Event:</strong> ${event.name}<br>
+                <strong>Description:</strong> ${event.description}<br>
+                <strong>Special Fish:</strong> ${event.specialFish.join(', ')}<br>
+                <strong>Value Multiplier:</strong> ${event.multiplier}x
+            `;
+        } else {
+            eventInfo.innerHTML = '<em>No active event</em>';
+        }
+    } else {
+        adminPanel.classList.add('hidden');
     }
 }
 
@@ -1295,6 +1461,71 @@ function initGame() {
     grassToggle?.addEventListener('change', (e) => {
         gameState.settings.grassEnabled = e.target.checked;
         saveSettings();
+    });
+    
+    // Admin panel handlers
+    const adminPasswordInput = document.getElementById('admin-password-input');
+    const adminLoginButton = document.getElementById('admin-login-button');
+    const adminLogoutButton = document.getElementById('admin-logout-button');
+    
+    adminLoginButton?.addEventListener('click', () => {
+        const password = adminPasswordInput?.value || '';
+        const savedPassword = gameState.settings.adminPassword || '';
+        
+        if (!savedPassword) {
+            // First time setup - save the password
+            if (password.length < 4) {
+                alert('Password must be at least 4 characters');
+                return;
+            }
+            gameState.settings.adminPassword = password;
+            gameState.isAdmin = true;
+            saveSettings();
+            adminPasswordInput.value = '';
+            updateAdminPanel();
+            // Start updating admin panel every second
+            if (!gameState.adminPanelInterval) {
+                gameState.adminPanelInterval = setInterval(() => {
+                    if (gameState.isAdmin) {
+                        updateAdminPanel();
+                    }
+                }, 1000);
+            }
+        } else {
+            // Check password
+            if (password === savedPassword) {
+                gameState.isAdmin = true;
+                adminPasswordInput.value = '';
+                updateAdminPanel();
+                // Start updating admin panel every second
+                if (!gameState.adminPanelInterval) {
+                    gameState.adminPanelInterval = setInterval(() => {
+                        if (gameState.isAdmin) {
+                            updateAdminPanel();
+                        }
+                    }, 1000);
+                }
+            } else {
+                alert('Incorrect password');
+                adminPasswordInput.value = '';
+            }
+        }
+    });
+    
+    adminLogoutButton?.addEventListener('click', () => {
+        gameState.isAdmin = false;
+        updateAdminPanel();
+        if (gameState.adminPanelInterval) {
+            clearInterval(gameState.adminPanelInterval);
+            gameState.adminPanelInterval = null;
+        }
+    });
+    
+    // Allow Enter key to submit admin login
+    adminPasswordInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            adminLoginButton.click();
+        }
     });
     
     logoutButton?.addEventListener('click', async () => {
