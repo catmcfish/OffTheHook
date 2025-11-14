@@ -401,10 +401,15 @@ body.nes-container::after {
 
 /* NES.icons styling for QTE button */
 .qte-button .nes-icon {
-    display: inline-block;
-    font-size: 1em;
-    line-height: 1;
+    display: inline-block !important;
+    font-size: 1em !important;
+    line-height: 1 !important;
     text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+    font-family: 'nes-icons' !important;
+    font-weight: 400;
+    font-style: normal;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .qte-button:active {
@@ -924,7 +929,9 @@ body.nes-container::after {
     }
     
     .qte-button .nes-icon {
-        font-size: 1em;
+        font-size: 1em !important;
+        display: inline-block !important;
+        font-family: 'nes-icons' !important;
     }
     
     .qte-instruction {
@@ -994,6 +1001,8 @@ body.nes-container::after {
     }
     
     .qte-button .nes-icon {
-        font-size: 1em;
+        font-size: 1em !important;
+        display: inline-block !important;
+        font-family: 'nes-icons' !important;
     }
 }

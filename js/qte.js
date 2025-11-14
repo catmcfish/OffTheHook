@@ -79,8 +79,16 @@ function startQTE() {
             gameState.qteCurrentTapLocation = location;
             
             // Use NES.icons exclamation-triangle-alt icon for 8-bit pixel art style
+            qteButton.textContent = ''; // Clear any existing text
             qteButton.innerHTML = '<i class="nes-icon nes-icon-exclamation-triangle-alt"></i>';
             qteButton.className = 'qte-button nes-btn is-success'; // Ensure NES.css classes are maintained
+            
+            // Ensure icon is visible
+            const icon = qteButton.querySelector('.nes-icon');
+            if (icon) {
+                icon.style.display = 'inline-block';
+                icon.style.fontFamily = 'nes-icons';
+            }
             // Position relative to overlay (full screen)
             qteButton.style.position = 'fixed';
             qteButton.style.left = location.x + 'vw';
@@ -211,7 +219,16 @@ function startQTE() {
 function successQTE() {
     gameState.qteActive = false;
     gameState.struggleAnimation = 0;
-    document.getElementById('qte-overlay').classList.add('hidden');
+    const qteOverlay = document.getElementById('qte-overlay');
+    const qteButton = document.getElementById('qte-button');
+    qteOverlay.classList.add('hidden');
+    
+    // Reset button styles
+    qteButton.style.position = '';
+    qteButton.style.left = '';
+    qteButton.style.top = '';
+    qteButton.style.transform = '';
+    qteButton.style.zIndex = '';
     
     // Clean up event listeners
     if (gameState.qteKeyHandler) {
@@ -219,7 +236,6 @@ function successQTE() {
         gameState.qteKeyHandler = null;
     }
     if (gameState.qteTapHandler) {
-        const qteOverlay = document.getElementById('qte-overlay');
         qteOverlay.removeEventListener('touchstart', gameState.qteTapHandler);
         qteOverlay.removeEventListener('click', gameState.qteTapHandler);
         gameState.qteTapHandler = null;
@@ -234,7 +250,16 @@ function failQTE() {
     gameState.isReeling = false;
     gameState.currentFish = null;
     gameState.struggleAnimation = 0;
-    document.getElementById('qte-overlay').classList.add('hidden');
+    const qteOverlay = document.getElementById('qte-overlay');
+    const qteButton = document.getElementById('qte-button');
+    qteOverlay.classList.add('hidden');
+    
+    // Reset button styles
+    qteButton.style.position = '';
+    qteButton.style.left = '';
+    qteButton.style.top = '';
+    qteButton.style.transform = '';
+    qteButton.style.zIndex = '';
     
     // Clean up event listeners
     if (gameState.qteKeyHandler) {
@@ -242,7 +267,6 @@ function failQTE() {
         gameState.qteKeyHandler = null;
     }
     if (gameState.qteTapHandler) {
-        const qteOverlay = document.getElementById('qte-overlay');
         qteOverlay.removeEventListener('touchstart', gameState.qteTapHandler);
         qteOverlay.removeEventListener('click', gameState.qteTapHandler);
         gameState.qteTapHandler = null;
