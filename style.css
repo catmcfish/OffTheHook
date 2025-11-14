@@ -677,6 +677,23 @@ body {
     position: relative;
 }
 
+.settings-input {
+    width: 100px;
+    padding: 5px 10px;
+    background: #34495e;
+    border: 2px solid #2c3e50;
+    border-radius: 4px;
+    color: #ecf0f1;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    text-align: center;
+}
+
+.settings-input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
 .settings-toggle {
     position: relative;
     width: 50px;
