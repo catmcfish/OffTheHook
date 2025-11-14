@@ -19,6 +19,9 @@
             <!-- Backpack icon -->
             <button id="backpack-button" class="backpack-button nes-btn">🎒</button>
             
+            <!-- Shop button -->
+            <button id="shop-button" class="shop-button nes-btn">🛒</button>
+            
             <!-- Settings button -->
             <button id="settings-button" class="settings-button nes-btn">⚙️</button>
             
@@ -156,6 +159,31 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Shop Overlay -->
+            <div id="shop-overlay" class="backpack-overlay hidden">
+                <div class="backpack-content nes-container is-dark">
+                    <div class="backpack-header">
+                        <h2 class="nes-text is-warning">🛒 Shop</h2>
+                        <button id="shop-close" class="backpack-close nes-btn is-error">×</button>
+                    </div>
+                    <div class="shop-content">
+                        <div class="shop-stats">
+                            <div class="stat">
+                                <span class="stat-label">Gold:</span>
+                                <span id="shop-gold">0</span>
+                            </div>
+                        </div>
+                        <div class="shop-categories" style="margin: 15px 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            <button id="shop-category-clothes" class="shop-category-btn nes-btn is-primary" style="font-size: 0.85em;">Clothes</button>
+                            <button id="shop-category-rods" class="shop-category-btn nes-btn" style="font-size: 0.85em;">Rods</button>
+                            <button id="shop-category-lines" class="shop-category-btn nes-btn" style="font-size: 0.85em;">Lines</button>
+                            <button id="shop-category-bobbers" class="shop-category-btn nes-btn" style="font-size: 0.85em;">Bobbers</button>
+                        </div>
+                        <div id="shop-items" class="shop-items"></div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Leaderboard button -->
@@ -174,6 +202,7 @@
     <script src="js/qte.js"></script>
     <script src="js/gameLogic.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/shop.js"></script>
     <script src="js/rendering.js"></script>
     <script src="game.js"></script>
 </body>

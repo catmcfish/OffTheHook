@@ -4,9 +4,11 @@
 function castLine() {
     if (gameState.isCasting || gameState.isReeling) return;
     
-    // Don't allow casting while backpack is open
+    // Don't allow casting while backpack or shop is open
     const backpackOverlay = document.getElementById('backpack-overlay');
-    if (backpackOverlay && !backpackOverlay.classList.contains('hidden')) {
+    const shopOverlay = document.getElementById('shop-overlay');
+    if ((backpackOverlay && !backpackOverlay.classList.contains('hidden')) ||
+        (shopOverlay && !shopOverlay.classList.contains('hidden'))) {
         return;
     }
     

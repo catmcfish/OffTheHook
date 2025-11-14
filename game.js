@@ -145,18 +145,22 @@ function initGame() {
     const castButtonTop = document.getElementById('cast-button-top');
     if (castButtonTop && typeof castLine === 'function') {
         castButtonTop.addEventListener('click', () => {
-            // Don't allow casting while backpack is open
+            // Don't allow casting while backpack or shop is open
             const backpackOverlay = document.getElementById('backpack-overlay');
-            if (backpackOverlay && !backpackOverlay.classList.contains('hidden')) {
+            const shopOverlay = document.getElementById('shop-overlay');
+            if ((backpackOverlay && !backpackOverlay.classList.contains('hidden')) ||
+                (shopOverlay && !shopOverlay.classList.contains('hidden'))) {
                 return;
             }
             castLine();
         });
         castButtonTop.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            // Don't allow casting while backpack is open
+            // Don't allow casting while backpack or shop is open
             const backpackOverlay = document.getElementById('backpack-overlay');
-            if (backpackOverlay && !backpackOverlay.classList.contains('hidden')) {
+            const shopOverlay = document.getElementById('shop-overlay');
+            if ((backpackOverlay && !backpackOverlay.classList.contains('hidden')) ||
+                (shopOverlay && !shopOverlay.classList.contains('hidden'))) {
                 return;
             }
             castLine();
@@ -328,6 +332,51 @@ function initGame() {
         if (leaderboardOverlay) {
             leaderboardOverlay.classList.add('hidden');
         }
+    });
+    
+    // Shop button and overlay
+    const shopButton = document.getElementById('shop-button');
+    const shopOverlay = document.getElementById('shop-overlay');
+    const shopClose = document.getElementById('shop-close');
+    const shopCategoryClothes = document.getElementById('shop-category-clothes');
+    const shopCategoryRods = document.getElementById('shop-category-rods');
+    const shopCategoryLines = document.getElementById('shop-category-lines');
+    const shopCategoryBobbers = document.getElementById('shop-category-bobbers');
+    
+    shopButton?.addEventListener('click', () => {
+        if (typeof showShop === 'function') {
+            showShop();
+        }
+    });
+    
+    shopClose?.addEventListener('click', () => {
+        if (shopOverlay) {
+            shopOverlay.classList.add('hidden');
+        }
+    });
+    
+    shopCategoryClothes?.addEventListener('click', () => {
+        gameState.shopCategory = 'clothes';
+        if (typeof updateShopCategoryButtons === 'function') updateShopCategoryButtons();
+        if (typeof updateShopItems === 'function') updateShopItems();
+    });
+    
+    shopCategoryRods?.addEventListener('click', () => {
+        gameState.shopCategory = 'rods';
+        if (typeof updateShopCategoryButtons === 'function') updateShopCategoryButtons();
+        if (typeof updateShopItems === 'function') updateShopItems();
+    });
+    
+    shopCategoryLines?.addEventListener('click', () => {
+        gameState.shopCategory = 'lines';
+        if (typeof updateShopCategoryButtons === 'function') updateShopCategoryButtons();
+        if (typeof updateShopItems === 'function') updateShopItems();
+    });
+    
+    shopCategoryBobbers?.addEventListener('click', () => {
+        gameState.shopCategory = 'bobbers';
+        if (typeof updateShopCategoryButtons === 'function') updateShopCategoryButtons();
+        if (typeof updateShopItems === 'function') updateShopItems();
     });
     
     // Settings button and overlay

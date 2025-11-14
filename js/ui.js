@@ -6,6 +6,10 @@ function updateUI() {
     const fishCountEl = document.getElementById('fish-count');
     if (goldEl) goldEl.textContent = gameState.gold;
     if (fishCountEl) fishCountEl.textContent = gameState.fishCount;
+    // Also update shop gold if shop is open
+    if (typeof updateShopGold === 'function') {
+        updateShopGold();
+    }
 }
 
 function showFishInfo(fish) {

@@ -51,7 +51,19 @@ const gameState = {
     adminPanelInterval: null, // Interval for updating admin panel
     backpackSort: 'recent', // Current backpack sort: 'recent', 'value', 'rarity'
     spacebarPressed: false, // Track if spacebar is currently being processed to prevent repeat casts
-    buyback: null // Last sold fish (for buyback feature)
+    buyback: null, // Last sold fish (for buyback feature)
+    equipment: {
+        // Equipped items
+        rod: null,      // Currently equipped fishing rod
+        line: null,     // Currently equipped fishing line
+        bobber: null,   // Currently equipped bobber
+        // Owned items (arrays of item IDs)
+        ownedRods: [],
+        ownedLines: [],
+        ownedBobbers: [],
+        ownedClothes: [] // Array of clothing item IDs
+    },
+    shopCategory: 'clothes' // Current shop category: 'clothes', 'rods', 'lines', 'bobbers'
 };
 
 // Canvas setup - will be initialized when DOM is ready

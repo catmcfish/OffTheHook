@@ -16,7 +16,8 @@ async function saveUserData() {
                 inventory: gameState.inventory,
                 settings: gameState.settings,
                 character: gameState.character,
-                buyback: gameState.buyback
+                buyback: gameState.buyback,
+                equipment: gameState.equipment
             })
         });
         
@@ -68,6 +69,25 @@ async function loadUserData(username) {
                 };
             }
             
+            // Load equipment from database
+            if (result.data.equipment) {
+                gameState.equipment = {
+                    rod: null,
+                    line: null,
+                    bobber: null,
+                    ownedRods: [],
+                    ownedLines: [],
+                    ownedBobbers: [],
+                    ownedClothes: [],
+                    ...result.data.equipment  // database equipment overrides defaults
+                };
+            }
+            
+            // Initialize default equipment for new players or if equipment is empty
+            if (typeof initializeDefaultEquipment === 'function') {
+                initializeDefaultEquipment();
+            }
+            
             // Update localStorage to match database
             localStorage.setItem('fishingGameSettings', JSON.stringify(gameState.settings));
             
@@ -86,6 +106,10 @@ async function loadUserData(username) {
             // Load from localStorage if API fails
             if (typeof loadSettings === 'function') loadSettings();
             gameState.isAdmin = false; // Not admin if no database data
+            // Initialize default equipment
+            if (typeof initializeDefaultEquipment === 'function') {
+                initializeDefaultEquipment();
+            }
             if (typeof updateSettingsUI === 'function') updateSettingsUI();
         }
     } catch (error) {
@@ -93,6 +117,10 @@ async function loadUserData(username) {
         // Load from localStorage as fallback
         if (typeof loadSettings === 'function') loadSettings();
         gameState.isAdmin = false; // Not admin if error loading
+        // Initialize default equipment
+        if (typeof initializeDefaultEquipment === 'function') {
+            initializeDefaultEquipment();
+        }
         if (typeof updateSettingsUI === 'function') updateSettingsUI();
     }
 }

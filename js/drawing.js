@@ -135,13 +135,13 @@ function drawCharacterHat(x, y, facingRight, hatColor, hatStyle) {
     }
 }
 
-// Draw character body/torso (8-bit pixelated)
-function drawCharacterBody(x, y, facingRight, shirtColor) {
+// Draw character body base (skin color) - drawn first as base layer
+function drawCharacterBodyBase(x, y, facingRight, skinColor) {
     const direction = facingRight ? 1 : -1;
     const px = PIXEL_SIZE;
     
-    ctx.fillStyle = shirtColor;
-    // Body pixels (torso)
+    ctx.fillStyle = skinColor;
+    // Body base pixels (torso shape in skin color)
     const bodyPixels = [
         [0, 1, 1, 1, 0],
         [1, 1, 1, 1, 1],
@@ -153,6 +153,30 @@ function drawCharacterBody(x, y, facingRight, shirtColor) {
     for (let row = 0; row < bodyPixels.length; row++) {
         for (let col = 0; col < bodyPixels[row].length; col++) {
             if (bodyPixels[row][col] === 1) {
+                ctx.fillRect(x + (col - 2) * px * direction, y - 18 + row * px, px, px);
+            }
+        }
+    }
+}
+
+// Draw character shirt (8-bit pixelated) - drawn on top of body base
+function drawCharacterShirt(x, y, facingRight, shirtColor) {
+    const direction = facingRight ? 1 : -1;
+    const px = PIXEL_SIZE;
+    
+    ctx.fillStyle = shirtColor;
+    // Shirt pixels (torso shape in shirt color)
+    const shirtPixels = [
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0]
+    ];
+    
+    for (let row = 0; row < shirtPixels.length; row++) {
+        for (let col = 0; col < shirtPixels[row].length; col++) {
+            if (shirtPixels[row][col] === 1) {
                 ctx.fillRect(x + (col - 2) * px * direction, y - 18 + row * px, px, px);
             }
         }
@@ -182,16 +206,23 @@ function drawCharacterPants(x, y, facingRight, pantsColor) {
     }
 }
 
-// Draw character arms (8-bit pixelated)
-function drawCharacterArms(x, y, facingRight, skinColor) {
+// Draw character back arm (8-bit pixelated) - drawn behind body
+function drawCharacterBackArm(x, y, facingRight, skinColor) {
     const direction = facingRight ? 1 : -1;
     const px = PIXEL_SIZE;
     
     ctx.fillStyle = skinColor;
-    // Arms pixels (side view)
-    // Back arm
+    // Back arm (behind body)
     ctx.fillRect(x - 2 * px * direction, y - 14, px, 2 * px);
-    // Front arm
+}
+
+// Draw character front arm (8-bit pixelated) - drawn in front of body
+function drawCharacterFrontArm(x, y, facingRight, skinColor) {
+    const direction = facingRight ? 1 : -1;
+    const px = PIXEL_SIZE;
+    
+    ctx.fillStyle = skinColor;
+    // Front arm (in front of body)
     ctx.fillRect(x + 2 * px * direction, y - 14, px, 2 * px);
 }
 
@@ -217,19 +248,21 @@ function drawCharacterAccessory(x, y, facingRight, accessoryColor, accessoryType
             ctx.fillRect(x - 2 * px * direction, y - 16 + row * px, px, px);
         }
     } else if (accessoryType === 'cape') {
-        // Cape pixels (larger, flowing)
+        // Cape pixels (larger, flowing) - positioned behind body so edges are visible
         const capePixels = [
-            [1, 1],
-            [1, 1],
-            [1, 1],
-            [1, 1],
-            [1, 1],
-            [1, 0]
+            [1, 1, 0],
+            [1, 1, 0],
+            [1, 1, 0],
+            [1, 1, 0],
+            [1, 1, 0],
+            [1, 0, 0]
         ];
         for (let row = 0; row < capePixels.length; row++) {
             for (let col = 0; col < capePixels[row].length; col++) {
                 if (capePixels[row][col] === 1) {
-                    ctx.fillRect(x + (col - 2) * px * direction, y - 18 + row * px, px, px);
+                    // Position cape slightly behind body (offset by -1 pixel in direction)
+                    // This makes the cape visible on the back side
+                    ctx.fillRect(x + (col - 3) * px * direction, y - 18 + row * px, px, px);
                 }
             }
         }
@@ -241,28 +274,42 @@ function drawCharacter(x, y, facingRight = false) {
     const char = gameState.character;
     
     // Draw character parts in order (back to front)
-    // 1. Accessory (scarf/cape) - drawn first so it's behind
-    drawCharacterAccessory(x, y, facingRight, char.accessoryColor, char.accessoryType);
+    // 1. Back arm (drawn first so it's behind everything)
+    drawCharacterBackArm(x, y, facingRight, char.skinColor);
     
-    // 2. Body/torso
-    drawCharacterBody(x, y, facingRight, char.shirtColor);
+    // 2. Accessory cape (drawn before body so it's behind, but after back arm)
+    // Only draw cape here; scarf will be drawn later
+    if (char.accessoryType === 'cape') {
+        drawCharacterAccessory(x, y, facingRight, char.accessoryColor, char.accessoryType);
+    }
     
-    // 3. Pants
+    // 3. Body base (skin color) - drawn as base layer
+    drawCharacterBodyBase(x, y, facingRight, char.skinColor);
+    
+    // 4. Shirt - drawn on top of body base so shirt color shows
+    drawCharacterShirt(x, y, facingRight, char.shirtColor);
+    
+    // 5. Pants
     drawCharacterPants(x, y, facingRight, char.pantsColor);
     
-    // 4. Arms
-    drawCharacterArms(x, y, facingRight, char.skinColor);
+    // 6. Front arm (drawn after body so it's in front)
+    drawCharacterFrontArm(x, y, facingRight, char.skinColor);
     
-    // 5. Head
+    // 7. Accessory scarf (drawn after body so it's visible in front)
+    if (char.accessoryType === 'scarf') {
+        drawCharacterAccessory(x, y, facingRight, char.accessoryColor, char.accessoryType);
+    }
+    
+    // 8. Head
     drawCharacterHead(x, y, facingRight, char.skinColor);
     
-    // 6. Hair (drawn after head but before hat)
+    // 9. Hair (drawn after head but before hat)
     drawCharacterHair(x, y, facingRight, char.hairColor, char.hairStyle);
     
-    // 7. Hat (drawn last so it's on top)
+    // 10. Hat (drawn last so it's on top)
     drawCharacterHat(x, y, facingRight, char.hatColor, char.hatStyle);
     
-    // 8. Fishing rod (when fishing) - 8-bit pixelated rod, pointing forward
+    // 11. Fishing rod (when fishing) - 8-bit pixelated rod, pointing forward
     if (gameState.isCasting || gameState.isReeling) {
         drawFishingRod(x, y, facingRight);
     }
@@ -276,7 +323,17 @@ function drawCharacter(x, y, facingRight = false) {
 function drawFishingRod(x, y, facingRight) {
     const direction = facingRight ? 1 : -1;
     const px = PIXEL_SIZE;
-    const rodColor = '#d4af37'; // Golden color
+    
+    // Get equipped rod color, default to golden if none equipped
+    let rodColor = '#d4af37'; // Default golden color
+    if (gameState.equipment && gameState.equipment.rod) {
+        if (typeof getEquippedItem === 'function') {
+            const equippedRod = getEquippedItem('rods', gameState.equipment.rod);
+            if (equippedRod && equippedRod.color) {
+                rodColor = equippedRod.color;
+            }
+        }
+    }
     
     ctx.fillStyle = rodColor;
     
@@ -299,7 +356,19 @@ function drawFishingRod(x, y, facingRight) {
 // Draw 8-bit pixelated fishing line
 function drawFishingLine(startX, startY, endX, endY) {
     const px = PIXEL_SIZE;
-    ctx.fillStyle = '#ffffff';
+    
+    // Get equipped line color, default to white if none equipped
+    let lineColor = '#ffffff'; // Default white color
+    if (gameState.equipment && gameState.equipment.line) {
+        if (typeof getEquippedItem === 'function') {
+            const equippedLine = getEquippedItem('lines', gameState.equipment.line);
+            if (equippedLine && equippedLine.color) {
+                lineColor = equippedLine.color;
+            }
+        }
+    }
+    
+    ctx.fillStyle = lineColor;
     
     // Calculate line distance
     const dx = endX - startX;
@@ -332,7 +401,13 @@ function drawFishingLine(startX, startY, endX, endY) {
     }
     
     // Also draw a continuous thin line for better visibility
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    // Convert line color to rgba with transparency
+    const rgb = hexToRgb(lineColor);
+    if (rgb) {
+        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`;
+    } else {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    }
     const continuousSteps = Math.floor(distance / px);
     for (let i = 0; i <= continuousSteps; i++) {
         const t = i / continuousSteps;
@@ -342,14 +417,67 @@ function drawFishingLine(startX, startY, endX, endY) {
     }
 }
 
+// Helper function to convert hex to RGB
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
 // Draw 8-bit pixelated bobber
 function drawBobber(x, y) {
     const px = PIXEL_SIZE;
     
+    // Get equipped bobber colors, default to brown if none equipped
+    let bobberColor = '#8b4513'; // Default brown
+    let bobberOutline = '#654321'; // Default darker brown
+    let hasGlow = false;
+    let isRainbow = false;
+    
+    if (gameState.equipment && gameState.equipment.bobber) {
+        if (typeof getEquippedItem === 'function') {
+            const equippedBobber = getEquippedItem('bobbers', gameState.equipment.bobber);
+            if (equippedBobber) {
+                if (equippedBobber.color) bobberColor = equippedBobber.color;
+                if (equippedBobber.outlineColor) bobberOutline = equippedBobber.outlineColor;
+                if (equippedBobber.glow) hasGlow = true;
+                if (equippedBobber.rainbow) isRainbow = true;
+            }
+        }
+    }
+    
     // Bobber pixels - circular shape approximated with pixels
     const bobberRadius = 6;
-    const bobberColor = '#8b4513'; // Brown
-    const bobberOutline = '#654321'; // Darker brown
+    
+    // Draw glow effect if bobber has glow property
+    if (hasGlow) {
+        const time = Date.now() * 0.005;
+        const glowRadius = bobberRadius + 4;
+        const glowOpacity = 0.5 + Math.sin(time * 2) * 0.3;
+        const rgb = hexToRgb(bobberColor);
+        if (rgb) {
+            ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${glowOpacity})`;
+            const glowStartX = Math.floor((x - glowRadius) / px) * px;
+            const glowEndX = Math.ceil((x + glowRadius) / px) * px;
+            const glowStartY = Math.floor((y - glowRadius) / px) * px;
+            const glowEndY = Math.ceil((y + glowRadius) / px) * px;
+            
+            for (let pxX = glowStartX; pxX <= glowEndX; pxX += px) {
+                for (let pxY = glowStartY; pxY <= glowEndY; pxY += px) {
+                    const dx = pxX - x;
+                    const dy = pxY - y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < glowRadius && dist > bobberRadius) {
+                        ctx.fillRect(pxX, pxY, px, px);
+                    }
+                }
+            }
+        }
+    }
     
     ctx.fillStyle = bobberColor;
     
@@ -366,8 +494,16 @@ function drawBobber(x, y) {
             const dist = Math.sqrt(dx * dx + dy * dy);
             
             if (dist < bobberRadius - 1) {
-                // Inner fill
-                ctx.fillStyle = bobberColor;
+                // Inner fill - use rainbow colors if rainbow bobber
+                if (isRainbow) {
+                    const angle = Math.atan2(dy, dx);
+                    const normalizedAngle = (angle + Math.PI) / (2 * Math.PI);
+                    const rainbowColors = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3'];
+                    const colorIndex = Math.floor(normalizedAngle * rainbowColors.length) % rainbowColors.length;
+                    ctx.fillStyle = rainbowColors[colorIndex];
+                } else {
+                    ctx.fillStyle = bobberColor;
+                }
                 ctx.fillRect(pxX, pxY, px, px);
             } else if (dist < bobberRadius + 1) {
                 // Outline
@@ -377,9 +513,20 @@ function drawBobber(x, y) {
         }
     }
     
-    // Add highlight pixel for 8-bit look
-    ctx.fillStyle = '#a0522d'; // Lighter brown
-    ctx.fillRect(Math.floor((x - 2) / px) * px, Math.floor((y - 2) / px) * px, px, px);
+    // Add highlight pixel for 8-bit look (unless rainbow)
+    if (!isRainbow) {
+        const rgb = hexToRgb(bobberColor);
+        if (rgb) {
+            // Lighten the color for highlight
+            const highlightR = Math.min(255, rgb.r + 40);
+            const highlightG = Math.min(255, rgb.g + 40);
+            const highlightB = Math.min(255, rgb.b + 40);
+            ctx.fillStyle = `rgb(${highlightR}, ${highlightG}, ${highlightB})`;
+        } else {
+            ctx.fillStyle = '#a0522d'; // Fallback lighter brown
+        }
+        ctx.fillRect(Math.floor((x - 2) / px) * px, Math.floor((y - 2) / px) * px, px, px);
+    }
 }
 
 // ============================================================================
@@ -933,9 +1080,11 @@ if (typeof window !== 'undefined') {
     window.drawCharacterHead = drawCharacterHead;
     window.drawCharacterHair = drawCharacterHair;
     window.drawCharacterHat = drawCharacterHat;
-    window.drawCharacterBody = drawCharacterBody;
+    window.drawCharacterBodyBase = drawCharacterBodyBase;
+    window.drawCharacterShirt = drawCharacterShirt;
     window.drawCharacterPants = drawCharacterPants;
-    window.drawCharacterArms = drawCharacterArms;
+    window.drawCharacterBackArm = drawCharacterBackArm;
+    window.drawCharacterFrontArm = drawCharacterFrontArm;
     window.drawCharacterAccessory = drawCharacterAccessory;
     window.drawFishingRod = drawFishingRod;
     window.drawFishingLine = drawFishingLine;
