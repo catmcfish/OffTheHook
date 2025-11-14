@@ -14,9 +14,14 @@ COPY server.js ./
 # Copy frontend files (from root, which are in git)
 COPY index.html game.js style.css config.js ./
 
+# Copy js/ directory (client-side modules)
+COPY js/ ./js/
+
 # Create public directory and copy files
 RUN mkdir -p public && \
-    cp index.html game.js style.css config.js public/
+    mkdir -p public/js && \
+    cp index.html game.js style.css config.js public/ && \
+    cp -r js/* public/js/
 
 # Verify files are copied
 RUN ls -la public/

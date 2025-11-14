@@ -6,11 +6,25 @@ const fs = require('fs');
 const { initializeFirebase, getDb, checkFirestore } = require('./server/utils/firebase');
 const { sendErrorResponse } = require('./server/utils/errors');
 
-// Initialize Firebase
-initializeFirebase();
+// Initialize Firebase (with error handling)
+try {
+    initializeFirebase();
+    console.log('Firebase initialized successfully');
+} catch (error) {
+    console.error('Firebase initialization error:', error);
+    // Don't crash - server can still start and handle requests
+    // Firebase will be initialized when first needed
+}
 
 const expressApp = express();
 const PORT = process.env.PORT || 8080;
+
+// Log startup information
+console.log('Starting server...');
+console.log('PORT:', PORT);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
+console.log('GOOGLE_APPLICATION_CREDENTIALS:', process.env.GOOGLE_APPLICATION_CREDENTIALS ? 'Set' : 'Not set');
 
 // Middleware
 expressApp.use(cors());
@@ -93,7 +107,7 @@ expressApp.get('*', (req, res, next) => {
     });
 });
 
-expressApp.listen(PORT, () => {
+expressApp.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
 
