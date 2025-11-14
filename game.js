@@ -44,7 +44,8 @@ const gameState = {
     timeOfDay: 'day', // 'morning', 'noon', 'afternoon', 'night'
     currentEvent: null, // Current synchronous event
     isAdmin: false, // Set from database userData.isAdmin
-    adminPanelInterval: null // Interval for updating admin panel
+    adminPanelInterval: null, // Interval for updating admin panel
+    backpackSort: 'recent' // Current backpack sort: 'recent', 'value', 'rarity'
 };
 
 // Canvas setup - will be initialized when DOM is ready
@@ -1911,16 +1912,43 @@ function updateBackpack() {
     backpackList.style.display = 'block';
     
     // Show all fish
-    const allFish = [...gameState.inventory].reverse();
+    let allFish = [...gameState.inventory];
     
     if (allFish.length === 0) {
         backpackList.innerHTML = '<div style="text-align: center; color: #95a5a6; padding: 20px;">No fish caught yet!</div>';
         return;
     }
     
-    // Find most valuable fish
-    const mostValuableFish = allFish.reduce((max, fish) => 
-        fish.value > max.value ? fish : max, allFish[0]);
+    // Sort fish based on current sort preference
+    const rarityOrder = {
+        'Common': 1,
+        'Uncommon': 2,
+        'Rare': 3,
+        'Epic': 4,
+        'Legendary': 5,
+        'Mythical': 6,
+        'Universal': 7
+    };
+    
+    switch(gameState.backpackSort) {
+        case 'value':
+            // Sort by value (highest first)
+            allFish.sort((a, b) => b.value - a.value);
+            break;
+        case 'rarity':
+            // Sort by rarity (highest first), then by value
+            allFish.sort((a, b) => {
+                const rarityDiff = (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0);
+                if (rarityDiff !== 0) return rarityDiff;
+                return b.value - a.value;
+            });
+            break;
+        case 'recent':
+        default:
+            // Sort by recent (most recent first) - reverse array
+            allFish.reverse();
+            break;
+    }
     
     // Create container for layout
     const container = document.createElement('div');
@@ -1930,37 +1958,75 @@ function updateBackpack() {
     container.style.alignItems = 'center'; // Center everything
     container.style.width = '100%';
     
-    // Display most valuable fish at the top and center
-    const mostValuableDiv = document.createElement('div');
-    mostValuableDiv.style.display = 'flex';
-    mostValuableDiv.style.flexDirection = 'column';
-    mostValuableDiv.style.alignItems = 'center';
-    mostValuableDiv.style.marginBottom = '20px';
-    mostValuableDiv.style.width = '100%';
+    // Only show "most valuable" section when not sorting by value
+    if (gameState.backpackSort !== 'value') {
+        // Find most valuable fish (for display at top)
+        const mostValuableFish = allFish.reduce((max, fish) => 
+            fish.value > max.value ? fish : max, allFish[0]);
+        
+        // Display most valuable fish at the top and center
+        const mostValuableDiv = document.createElement('div');
+        mostValuableDiv.style.display = 'flex';
+        mostValuableDiv.style.flexDirection = 'column';
+        mostValuableDiv.style.alignItems = 'center';
+        mostValuableDiv.style.marginBottom = '20px';
+        mostValuableDiv.style.width = '100%';
+        
+        // Render fish sprite
+        const mostValuableSprite = renderFishSprite(mostValuableFish);
+        
+        mostValuableDiv.innerHTML = `
+            <div style="color: #f39c12; font-size: 1.2em; margin-bottom: 10px; text-align: center;">🏆 Most Valuable Fish</div>
+            <div class="backpack-item most-valuable-item" style="max-width: 300px; width: 100%; border: 3px solid #f39c12; padding: 15px; display: flex; flex-direction: column; align-items: center;">
+                <img src="${mostValuableSprite}" alt="${mostValuableFish.type}" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; width: 64px; height: 64px; margin-bottom: 10px;" />
+                <div class="backpack-item-name" style="color: ${mostValuableFish.rarityColor}; font-size: 1.1em; text-align: center;">${mostValuableFish.type}</div>
+                <div class="backpack-item-details" style="text-align: center; margin: 5px 0;">${mostValuableFish.size} ${mostValuableFish.rarity}</div>
+                <div class="backpack-item-value" style="text-align: center; font-size: 1.2em; color: #f39c12;">${mostValuableFish.value}G</div>
+            </div>
+        `;
+        container.appendChild(mostValuableDiv);
+        
+        // Add separator
+        const separator = document.createElement('div');
+        separator.style.width = '100%';
+        separator.style.height = '2px';
+        separator.style.background = '#34495e';
+        separator.style.margin = '10px 0';
+        container.appendChild(separator);
+        
+        // Filter out the most valuable fish from the list (to avoid duplication)
+        allFish = allFish.filter(fish => 
+            !(fish.value === mostValuableFish.value && fish.type === mostValuableFish.type)
+        );
+        
+        // Add duplicates of most valuable fish back to the list
+        const mostValuableCount = gameState.inventory.filter(fish => 
+            fish.value === mostValuableFish.value && fish.type === mostValuableFish.type
+        ).length;
+        
+        if (mostValuableCount > 1) {
+            // Add remaining duplicates of most valuable fish to the list
+            for (let i = 1; i < mostValuableCount; i++) {
+                allFish.push(mostValuableFish);
+            }
+            // Re-sort after adding duplicates
+            switch(gameState.backpackSort) {
+                case 'rarity':
+                    allFish.sort((a, b) => {
+                        const rarityDiff = (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0);
+                        if (rarityDiff !== 0) return rarityDiff;
+                        return b.value - a.value;
+                    });
+                    break;
+                case 'recent':
+                default:
+                    // Keep recent order (most valuable duplicates go to end)
+                    break;
+            }
+        }
+    }
     
-    // Render fish sprite
-    const mostValuableSprite = renderFishSprite(mostValuableFish);
-    
-    mostValuableDiv.innerHTML = `
-        <div style="color: #f39c12; font-size: 1.2em; margin-bottom: 10px; text-align: center;">🏆 Most Valuable Fish</div>
-        <div class="backpack-item most-valuable-item" style="max-width: 300px; width: 100%; border: 3px solid #f39c12; padding: 15px; display: flex; flex-direction: column; align-items: center;">
-            <img src="${mostValuableSprite}" alt="${mostValuableFish.type}" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; width: 64px; height: 64px; margin-bottom: 10px;" />
-            <div class="backpack-item-name" style="color: ${mostValuableFish.rarityColor}; font-size: 1.1em; text-align: center;">${mostValuableFish.type}</div>
-            <div class="backpack-item-details" style="text-align: center; margin: 5px 0;">${mostValuableFish.size} ${mostValuableFish.rarity}</div>
-            <div class="backpack-item-value" style="text-align: center; font-size: 1.2em; color: #f39c12;">${mostValuableFish.value}G</div>
-        </div>
-    `;
-    container.appendChild(mostValuableDiv);
-    
-    // Add separator
-    const separator = document.createElement('div');
-    separator.style.width = '100%';
-    separator.style.height = '2px';
-    separator.style.background = '#34495e';
-    separator.style.margin = '10px 0';
-    container.appendChild(separator);
-    
-    // Create grid for all other fish
+    // Create grid for all fish
     const allFishContainer = document.createElement('div');
     allFishContainer.style.display = 'grid';
     allFishContainer.style.gridTemplateColumns = 'repeat(auto-fit, minmax(180px, 1fr))';
@@ -1968,39 +2034,8 @@ function updateBackpack() {
     allFishContainer.style.width = '100%';
     allFishContainer.style.justifyItems = 'stretch'; // Stretch items to fill grid cells
     
-    // Display all other fish (excluding most valuable)
-    const otherFish = allFish.filter(fish => 
-        !(fish.value === mostValuableFish.value && fish.type === mostValuableFish.type)
-    );
-    
-    // Also include duplicates of most valuable fish
-    const mostValuableCount = allFish.filter(fish => 
-        fish.value === mostValuableFish.value && fish.type === mostValuableFish.type
-    ).length;
-    
-    if (mostValuableCount > 1) {
-        // Add remaining duplicates of most valuable fish
-        for (let i = 1; i < mostValuableCount; i++) {
-            const fishSprite = renderFishSprite(mostValuableFish);
-            const fishDiv = document.createElement('div');
-            fishDiv.className = 'backpack-item';
-            fishDiv.style.display = 'flex';
-            fishDiv.style.flexDirection = 'column';
-            fishDiv.style.alignItems = 'center';
-            fishDiv.style.padding = '10px';
-            fishDiv.style.width = '100%';
-            fishDiv.innerHTML = `
-                <img src="${fishSprite}" alt="${mostValuableFish.type}" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; width: 48px; height: 48px; margin-bottom: 8px;" />
-                <div class="backpack-item-name" style="color: ${mostValuableFish.rarityColor}; text-align: center; font-size: 0.9em;">${mostValuableFish.type}</div>
-                <div class="backpack-item-details" style="text-align: center; font-size: 0.8em; margin: 3px 0;">${mostValuableFish.size} ${mostValuableFish.rarity}</div>
-                <div class="backpack-item-value" style="text-align: center; color: #f39c12; font-size: 0.9em;">${mostValuableFish.value}G</div>
-            `;
-            allFishContainer.appendChild(fishDiv);
-        }
-    }
-    
-    // Add all other fish
-    otherFish.forEach(fish => {
+    // Add all fish
+    allFish.forEach(fish => {
         const fishSprite = renderFishSprite(fish);
         const fishDiv = document.createElement('div');
         fishDiv.className = 'backpack-item';
@@ -2506,6 +2541,7 @@ function initGame() {
             const backpackOverlay = document.getElementById('backpack-overlay');
             if (backpackOverlay) {
                 backpackOverlay.classList.remove('hidden');
+                updateBackpackSortButtons();
                 updateBackpack();
             }
         });
@@ -2520,6 +2556,72 @@ function initGame() {
             }
         });
     }
+    
+    // Backpack sorting buttons
+    function updateBackpackSortButtons() {
+        const sortRecent = document.getElementById('backpack-sort-recent');
+        const sortValue = document.getElementById('backpack-sort-value');
+        const sortRarity = document.getElementById('backpack-sort-rarity');
+        
+        // Reset all buttons
+        [sortRecent, sortValue, sortRarity].forEach(btn => {
+            if (btn) {
+                btn.classList.remove('is-primary');
+                btn.classList.add('is-dark');
+            }
+        });
+        
+        // Highlight active sort button
+        switch(gameState.backpackSort) {
+            case 'recent':
+                if (sortRecent) {
+                    sortRecent.classList.remove('is-dark');
+                    sortRecent.classList.add('is-primary');
+                }
+                break;
+            case 'value':
+                if (sortValue) {
+                    sortValue.classList.remove('is-dark');
+                    sortValue.classList.add('is-primary');
+                }
+                break;
+            case 'rarity':
+                if (sortRarity) {
+                    sortRarity.classList.remove('is-dark');
+                    sortRarity.classList.add('is-primary');
+                }
+                break;
+        }
+    }
+    
+    const sortRecentBtn = document.getElementById('backpack-sort-recent');
+    const sortValueBtn = document.getElementById('backpack-sort-value');
+    const sortRarityBtn = document.getElementById('backpack-sort-rarity');
+    
+    if (sortRecentBtn) {
+        sortRecentBtn.addEventListener('click', () => {
+            gameState.backpackSort = 'recent';
+            updateBackpackSortButtons();
+            updateBackpack();
+        });
+    }
+    
+    if (sortValueBtn) {
+        sortValueBtn.addEventListener('click', () => {
+            gameState.backpackSort = 'value';
+            updateBackpackSortButtons();
+            updateBackpack();
+        });
+    }
+    
+    if (sortRarityBtn) {
+        sortRarityBtn.addEventListener('click', () => {
+            gameState.backpackSort = 'rarity';
+            updateBackpackSortButtons();
+            updateBackpack();
+        });
+    }
+    
 
     // Continue button for fish info
     const continueButton = document.getElementById('continue-button');
