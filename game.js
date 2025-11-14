@@ -1,3 +1,42 @@
+// ============================================================================
+// IMPORTANT: UNIFIED TIME-BASED ANIMATION SYSTEM
+// ============================================================================
+// This project uses a unified time-based animation system instead of setInterval
+// with draw() calls. This prevents frame drops and redundant rendering.
+//
+// PATTERN TO FOLLOW:
+// 1. Store animation start time in gameState (e.g., gameState.castStartTime)
+// 2. Update animation state in the draw() function based on elapsed time
+// 3. NEVER call draw() from setInterval or setTimeout
+// 4. The main game loop (requestAnimationFrame) handles all rendering
+//
+// EXAMPLE:
+//   // Start animation:
+//   gameState.animationStartTime = Date.now();
+//   gameState.isAnimating = true;
+//
+//   // In draw() function:
+//   if (gameState.isAnimating && gameState.animationStartTime) {
+//       const elapsed = Date.now() - gameState.animationStartTime;
+//       const progress = Math.min(elapsed / duration, 1);
+//       // Update gameState based on progress
+//       if (progress >= 1) {
+//           // Animation complete
+//           gameState.isAnimating = false;
+//       }
+//   }
+//
+// WHAT TO AVOID:
+// - setInterval(() => { draw(); }, 16)  // BAD - causes redundant rendering
+// - setTimeout(() => { draw(); }, 100)    // BAD - causes redundant rendering
+// - Multiple timers calling draw()      // BAD - causes frame drops
+//
+// EXISTING ANIMATIONS USING THIS SYSTEM:
+// - Casting animation (castStartTime, castPhase)
+// - Reeling animation (reelStartTime, reelInitialDepth)
+// - All animations update in draw() function based on elapsed time
+// ============================================================================
+
 // Game state
 const gameState = {
     gold: 0,
@@ -23,6 +62,10 @@ const gameState = {
     bobberY: 0,
     bobberThrown: false,
     bobberThrowProgress: 0,
+    castStartTime: 0,
+    castPhase: null, // 'throwing', 'sinking', 'complete'
+    reelStartTime: 0,
+    reelInitialDepth: null, // Initial depth when reeling starts
     isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
     currentUser: null,
     settings: {
@@ -53,6 +96,13 @@ const gameState = {
 let canvas;
 let ctx;
 
+// Cache for sky gradients to avoid recreating every frame
+let skyGradientCache = {
+    timeOfDay: null,
+    canvasHeight: null,
+    gradient: null
+};
+
 function resizeCanvas() {
     if (canvas) {
         canvas.width = window.innerWidth;
@@ -61,6 +111,9 @@ function resizeCanvas() {
         // Clear ripples on resize
         waterRipples = [];
         lastRippleSpawn = 0;
+        // Clear gradient cache on resize
+        skyGradientCache.gradient = null;
+        skyGradientCache.canvasHeight = null;
     }
 }
 
@@ -462,6 +515,22 @@ const SYNCHRONOUS_EVENTS = {
     }
 };
 
+// Performance profiling (only enabled in development)
+const PERFORMANCE_PROFILING = false; // Set to true to enable profiling
+let performanceStats = {
+    frameCount: 0,
+    totalTime: 0,
+    skyTime: 0,
+    rainTime: 0,
+    waterTime: 0,
+    beachTime: 0,
+    grassTime: 0,
+    characterTime: 0,
+    fishingLineTime: 0,
+    ripplesTime: 0,
+    otherTime: 0
+};
+
 function getCurrentEvent() {
     const timeOfDay = getTimeOfDay();
     return SYNCHRONOUS_EVENTS[timeOfDay] || null;
@@ -473,6 +542,9 @@ function draw() {
         return;
     }
     
+    const frameStart = PERFORMANCE_PROFILING ? performance.now() : 0;
+    let sectionStart = frameStart;
+    
     // Clear canvas
     ctx.fillStyle = '#2c3e50';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -481,38 +553,53 @@ function draw() {
     gameState.timeOfDay = getTimeOfDay();
     gameState.currentEvent = getCurrentEvent();
     
-    // Draw sky based on time of day
+    // Draw sky based on time of day (use cached gradient if available)
     const skyHeight = canvas.height * 0.6;
-    const skyGradient = ctx.createLinearGradient(0, 0, 0, skyHeight);
     
-    // Sky colors for different times of day
-    let topColor, bottomColor;
-    switch (gameState.timeOfDay) {
-        case 'morning':
-            topColor = '#ff9a56'; // Orange-pink sunrise
-            bottomColor = '#ffd89b'; // Light orange
-            break;
-        case 'noon':
-            topColor = '#87ceeb'; // Sky blue
-            bottomColor = '#e0f6ff'; // Light blue
-            break;
-        case 'afternoon':
-            topColor = '#ffa500'; // Orange
-            bottomColor = '#ffd700'; // Gold
-            break;
-        case 'night':
-            topColor = '#191970'; // Midnight blue
-            bottomColor = '#000033'; // Very dark blue
-            break;
-        default:
-            topColor = '#4a5568';
-            bottomColor = '#2d3748';
+    // Check if we need to recreate the gradient (time of day or canvas size changed)
+    if (!skyGradientCache.gradient || 
+        skyGradientCache.timeOfDay !== gameState.timeOfDay || 
+        skyGradientCache.canvasHeight !== canvas.height) {
+        
+        skyGradientCache.gradient = ctx.createLinearGradient(0, 0, 0, skyHeight);
+        
+        // Sky colors for different times of day
+        let topColor, bottomColor;
+        switch (gameState.timeOfDay) {
+            case 'morning':
+                topColor = '#ff9a56'; // Orange-pink sunrise
+                bottomColor = '#ffd89b'; // Light orange
+                break;
+            case 'noon':
+                topColor = '#87ceeb'; // Sky blue
+                bottomColor = '#e0f6ff'; // Light blue
+                break;
+            case 'afternoon':
+                topColor = '#ffa500'; // Orange
+                bottomColor = '#ffd700'; // Gold
+                break;
+            case 'night':
+                topColor = '#191970'; // Midnight blue
+                bottomColor = '#000033'; // Very dark blue
+                break;
+            default:
+                topColor = '#4a5568';
+                bottomColor = '#2d3748';
+        }
+        
+        skyGradientCache.gradient.addColorStop(0, topColor);
+        skyGradientCache.gradient.addColorStop(1, bottomColor);
+        skyGradientCache.timeOfDay = gameState.timeOfDay;
+        skyGradientCache.canvasHeight = canvas.height;
     }
     
-    skyGradient.addColorStop(0, topColor);
-    skyGradient.addColorStop(1, bottomColor);
-    ctx.fillStyle = skyGradient;
+    ctx.fillStyle = skyGradientCache.gradient;
     ctx.fillRect(0, 0, canvas.width, skyHeight);
+    
+    if (PERFORMANCE_PROFILING) {
+        performanceStats.skyTime += performance.now() - sectionStart;
+        sectionStart = performance.now();
+    }
     
     // Always update frame time for consistent timing
     const now = Date.now();
@@ -560,6 +647,11 @@ function draw() {
                 particle.x = Math.random() * canvas.width;
             }
         });
+        
+        if (PERFORMANCE_PROFILING) {
+            performanceStats.rainTime += performance.now() - sectionStart;
+            sectionStart = performance.now();
+        }
     }
     
     // Draw water (dark blue) - fills right side and below beach curve
@@ -604,6 +696,11 @@ function draw() {
         }
     }
     
+    if (PERFORMANCE_PROFILING) {
+        performanceStats.waterTime += performance.now() - sectionStart;
+        sectionStart = performance.now();
+    }
+    
     // Draw pixelated beach (8-bit style)
     // Draw beach AFTER water so it appears on top
     const beachPixelSize = 8;
@@ -631,6 +728,11 @@ function draw() {
                 ctx.fillRect(x, y, beachPixelSize, beachPixelSize);
             }
         }
+    }
+    
+    if (PERFORMANCE_PROFILING) {
+        performanceStats.beachTime += performance.now() - sectionStart;
+        sectionStart = performance.now();
     }
     
     // Draw beach edge pixels more precisely for smoother curve appearance
@@ -679,6 +781,11 @@ function draw() {
         }
     }
     
+    if (PERFORMANCE_PROFILING && gameState.settings.grassEnabled) {
+        performanceStats.grassTime += performance.now() - sectionStart;
+        sectionStart = performance.now();
+    }
+    
     // Calculate character position on beach (standing on the curve)
     const charX = landEndX * 0.25;
     // Calculate Y position on the quadratic curve using the formula
@@ -688,6 +795,70 @@ function draw() {
     
     // Draw character on beach (facing right toward ocean)
     drawCharacter(charX, charY, true); // true = facing right
+    
+    if (PERFORMANCE_PROFILING) {
+        performanceStats.characterTime += performance.now() - sectionStart;
+        sectionStart = performance.now();
+    }
+    
+    // ========================================================================
+    // ANIMATION UPDATES: Use time-based state updates, NOT setInterval
+    // See documentation at top of file for the unified animation system pattern
+    // ========================================================================
+    
+    // Update casting/reeling animations based on time (time-based, not interval-based)
+    if (gameState.isCasting && gameState.castStartTime) {
+        const now = Date.now();
+        const elapsed = now - gameState.castStartTime;
+        const throwDuration = 800; // milliseconds
+        
+        if (gameState.castPhase === 'throwing') {
+            gameState.bobberThrowProgress = Math.min(elapsed / throwDuration, 1);
+            gameState.bobberThrown = true;
+            
+            if (gameState.bobberThrowProgress >= 1) {
+                // Bobber has landed, start sinking phase
+                gameState.castPhase = 'sinking';
+                gameState.castStartTime = now; // Reset timer for sinking phase
+                gameState.lineDepth = 0;
+            }
+        } else if (gameState.castPhase === 'sinking') {
+            const sinkElapsed = now - gameState.castStartTime;
+            const sinkSpeed = 2; // pixels per frame equivalent (at 60fps)
+            gameState.lineDepth = Math.min(sinkElapsed * sinkSpeed / 16.67, gameState.maxDepth);
+            
+            if (gameState.lineDepth >= gameState.maxDepth) {
+                // Sinking complete, wait for QTE before starting reeling
+                gameState.isCasting = false;
+                gameState.isReeling = true; // Set flag but don't start timer yet
+                gameState.reelStartTime = 0; // Will be set after QTE completes
+                gameState.castPhase = 'complete';
+                
+                // Fish bites after a short delay
+                setTimeout(() => {
+                    gameState.currentFish = generateFish();
+                    startQTE();
+                }, 500);
+            }
+        }
+    }
+    
+    // Update reeling animation based on time (pause during QTE)
+    if (gameState.isReeling && gameState.reelStartTime && !gameState.qteActive) {
+        const now = Date.now();
+        const reelElapsed = now - gameState.reelStartTime;
+        const reelSpeed = 3; // pixels per frame equivalent (at 60fps)
+        // Store initial depth when reeling starts if not already set
+        if (!gameState.reelInitialDepth) {
+            gameState.reelInitialDepth = gameState.lineDepth || gameState.maxDepth;
+        }
+        gameState.lineDepth = Math.max(0, gameState.reelInitialDepth - (reelElapsed * reelSpeed / 16.67));
+        
+        if (gameState.lineDepth <= 0) {
+            gameState.reelInitialDepth = null; // Reset
+            catchFish();
+        }
+    }
     
     // Draw fishing line - casting forward/right from beach into water (side view)
     if (gameState.isCasting || gameState.isReeling) {
@@ -751,6 +922,11 @@ function draw() {
         // Draw pixelated fishing line (8-bit style)
         drawFishingLine(lineStartX, lineStartY, lineEndX, lineEndY);
         
+        if (PERFORMANCE_PROFILING) {
+            performanceStats.fishingLineTime += performance.now() - sectionStart;
+            sectionStart = performance.now();
+        }
+        
         // Draw pixelated bobber (8-bit style)
         if (gameState.bobberThrown || gameState.isReeling || (gameState.isCasting && gameState.bobberThrowProgress >= 1)) {
             drawBobber(lineEndX, lineEndY);
@@ -772,6 +948,51 @@ function draw() {
     // Draw water ripples (if rain is enabled)
     if (gameState.settings.rainEnabled) {
         drawRipples();
+        
+        if (PERFORMANCE_PROFILING) {
+            performanceStats.ripplesTime += performance.now() - sectionStart;
+            sectionStart = performance.now();
+        }
+    }
+    
+    if (PERFORMANCE_PROFILING) {
+        const frameTime = performance.now() - frameStart;
+        performanceStats.totalTime += frameTime;
+        performanceStats.frameCount++;
+        
+        // Log performance stats every 60 frames (~1 second at 60fps)
+        if (performanceStats.frameCount % 60 === 0) {
+            const avgFrameTime = performanceStats.totalTime / performanceStats.frameCount;
+            const avgFPS = 1000 / avgFrameTime;
+            console.log('=== Performance Report ===');
+            console.log(`Average FPS: ${avgFPS.toFixed(2)}`);
+            console.log(`Average frame time: ${avgFrameTime.toFixed(2)}ms`);
+            console.log('Time per section (avg ms per frame):');
+            console.log(`  Sky: ${(performanceStats.skyTime / performanceStats.frameCount).toFixed(2)}ms`);
+            console.log(`  Rain: ${(performanceStats.rainTime / performanceStats.frameCount).toFixed(2)}ms`);
+            console.log(`  Water: ${(performanceStats.waterTime / performanceStats.frameCount).toFixed(2)}ms`);
+            console.log(`  Beach: ${(performanceStats.beachTime / performanceStats.frameCount).toFixed(2)}ms`);
+            console.log(`  Grass: ${(performanceStats.grassTime / performanceStats.frameCount).toFixed(2)}ms`);
+            console.log(`  Character: ${(performanceStats.characterTime / performanceStats.frameCount).toFixed(2)}ms`);
+            console.log(`  Fishing Line: ${(performanceStats.fishingLineTime / performanceStats.frameCount).toFixed(2)}ms`);
+            console.log(`  Ripples: ${(performanceStats.ripplesTime / performanceStats.frameCount).toFixed(2)}ms`);
+            console.log(`  Other: ${(performanceStats.otherTime / performanceStats.frameCount).toFixed(2)}ms`);
+            
+            // Reset stats
+            performanceStats = {
+                frameCount: 0,
+                totalTime: 0,
+                skyTime: 0,
+                rainTime: 0,
+                waterTime: 0,
+                beachTime: 0,
+                grassTime: 0,
+                characterTime: 0,
+                fishingLineTime: 0,
+                ripplesTime: 0,
+                otherTime: 0
+            };
+        }
     }
 }
 
@@ -1492,20 +1713,27 @@ function drawRipples() {
             
             ctx.fillStyle = `rgba(255, 255, 255, ${ringOpacity})`;
             
-            // Draw pixelated circle (approximate with square pixels)
+            // Draw pixelated circle (optimized - only check pixels near the ring)
             const startX = Math.floor((ripple.x - ringRadius) / ripplePixelSize) * ripplePixelSize;
             const endX = Math.ceil((ripple.x + ringRadius) / ripplePixelSize) * ripplePixelSize;
             const startY = Math.floor((ripple.y - ringRadius) / ripplePixelSize) * ripplePixelSize;
             const endY = Math.ceil((ripple.y + ringRadius) / ripplePixelSize) * ripplePixelSize;
             
+            // Optimize: only check pixels in a band around the ring radius
+            const ringThickness = ripplePixelSize * 1.5;
+            const minDist = ringRadius - ringThickness;
+            const maxDist = ringRadius + ringThickness;
+            const minDistSq = minDist * minDist;
+            const maxDistSq = maxDist * maxDist;
+            
             for (let px = startX; px <= endX; px += ripplePixelSize) {
                 for (let py = startY; py <= endY; py += ripplePixelSize) {
                     const dx = px - ripple.x;
                     const dy = py - ripple.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const distSq = dx * dx + dy * dy; // Use squared distance to avoid sqrt
                     
                     // Draw pixel if within ring radius (with some tolerance for pixelation)
-                    if (Math.abs(dist - ringRadius) < ripplePixelSize * 1.5) {
+                    if (distSq >= minDistSq && distSq <= maxDistSq) {
                         ctx.fillRect(px, py, ripplePixelSize, ripplePixelSize);
                     }
                 }
@@ -1522,47 +1750,12 @@ function castLine() {
     gameState.lineDepth = 0;
     gameState.bobberThrown = false;
     gameState.bobberThrowProgress = 0;
+    gameState.castStartTime = Date.now();
+    gameState.castPhase = 'throwing'; // 'throwing', 'sinking', 'complete'
     
     // Initialize bobber position (will be set by draw function on first render)
     gameState.bobberX = 0;
     gameState.bobberY = 0;
-    
-    // Wait for first draw to set bobber position, then start throw animation
-    setTimeout(() => {
-        // Animate bobber throw (arc through air)
-        const throwDuration = 800; // milliseconds
-        const throwStartTime = Date.now();
-        
-        const throwInterval = setInterval(() => {
-            const elapsed = Date.now() - throwStartTime;
-            gameState.bobberThrowProgress = Math.min(elapsed / throwDuration, 1);
-            gameState.bobberThrown = true;
-            
-            if (gameState.bobberThrowProgress >= 1) {
-                clearInterval(throwInterval);
-                // Bobber has landed, now animate line going down
-                gameState.lineDepth = 0;
-                
-                const castInterval = setInterval(() => {
-                    gameState.lineDepth += 2;
-                    if (gameState.lineDepth >= gameState.maxDepth) {
-                        clearInterval(castInterval);
-                        gameState.isCasting = false;
-                        // Set isReeling immediately so line/bobber stay visible during bite delay
-                        gameState.isReeling = true;
-                        
-                        // Fish bites! (keep line/bobber visible during this delay)
-                        setTimeout(() => {
-                            gameState.currentFish = generateFish();
-                            startQTE();
-                        }, 500);
-                    }
-                    draw();
-                }, 16);
-            }
-            draw();
-        }, 16);
-    }, 50); // Small delay to ensure first draw has happened
 }
 
 // Quick Time Event
@@ -1742,15 +1935,8 @@ function successQTE() {
         gameState.qteTapHandler = null;
     }
     
-    // Animate reeling in (pulling fish back toward character)
-    const reelInterval = setInterval(() => {
-        gameState.lineDepth -= 3;
-        if (gameState.lineDepth <= 0) {
-            clearInterval(reelInterval);
-            catchFish();
-        }
-        draw();
-    }, 16);
+    // Start reeling animation (time-based, handled in draw function)
+    gameState.reelStartTime = Date.now();
 }
 
 function failQTE() {
@@ -1785,6 +1971,8 @@ function failQTE() {
 
 function catchFish() {
     gameState.isReeling = false;
+    gameState.reelStartTime = 0;
+    gameState.reelInitialDepth = null;
     gameState.gold += gameState.currentFish.value;
     gameState.fishCount++;
     const caughtFish = { ...gameState.currentFish };
