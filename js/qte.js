@@ -78,17 +78,9 @@ function startQTE() {
             const location = locations[Math.floor(Math.random() * locations.length)];
             gameState.qteCurrentTapLocation = location;
             
-            // Use NES.icons exclamation-triangle-alt icon for 8-bit pixel art style
-            qteButton.textContent = ''; // Clear any existing text
-            qteButton.innerHTML = '<i class="nes-icon nes-icon-exclamation-triangle-alt"></i>';
+            // Mobile QTE button - empty green button
+            qteButton.textContent = '';
             qteButton.className = 'qte-button nes-btn is-success'; // Ensure NES.css classes are maintained
-            
-            // Ensure icon is visible
-            const icon = qteButton.querySelector('.nes-icon');
-            if (icon) {
-                icon.style.display = 'inline-block';
-                icon.style.fontFamily = 'nes-icons';
-            }
             // Position relative to overlay (full screen)
             qteButton.style.position = 'fixed';
             qteButton.style.left = location.x + 'vw';
