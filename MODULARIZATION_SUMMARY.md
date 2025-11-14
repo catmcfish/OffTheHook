@@ -30,7 +30,7 @@ server/
 
 #### Core Modules
 - `js/gameState.js` - Game state management (gameState object, canvas, ctx, skyGradientCache)
-- `js/fish.js` - Fish types, generation, rarity configuration (175 fish types, 7 rarities)
+- `js/fish.js` - Fish types (175 total: 25 per rarity), generation, rarity configuration (7 rarities)
 - `js/events.js` - Time of day and synchronous events system
 - `js/utils.js` - Utility functions (color manipulation: darkenColor, lightenColor)
 - `js/environment.js` - Environment effects (rain particles, water ripples)
@@ -43,7 +43,7 @@ server/
 
 #### Rendering Modules
 - `js/drawing.js` - All drawing functions (character, fish, environment, fishing line, bobber)
-- `js/rendering.js` - Main rendering loop (`draw()` function, `resizeCanvas()`, animation updates)
+- `js/rendering.js` - Main rendering loop (`draw()` function at line 46, `resizeCanvas()`, time-based animation updates)
 
 #### Initialization
 - `game.js` - Game initialization (`initGame()` function, event listener setup, game loop startup)
@@ -89,6 +89,8 @@ The modules are loaded in `index.html` in the following dependency order:
 - Functions check for dependencies before calling (e.g., `if (typeof updateUI === 'function')`)
 - Some functions have circular dependencies that need careful handling
 - The drawing module is large and may benefit from further splitting (character drawing, fish drawing, environment drawing)
+- Animation system uses unified time-based approach (no `setInterval`/`setTimeout` calling `draw()`)
+- Main `draw()` function is in `js/rendering.js` at line 46, called by `requestAnimationFrame`
 
 ## Benefits Achieved
 

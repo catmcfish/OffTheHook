@@ -15,7 +15,7 @@ A retro-style fishing game built with HTML5 Canvas, featuring QTE (Quick Time Ev
   - Legendary: 10 QTEs, 0.9s each
   - Mythical: 20 QTEs, 0.9s each
   - Universal: 50 QTEs, 0.9s each
-- **18 Unique Fish Types**: From Glowfin to Omnipotent Oarfish
+- **175 Unique Fish Types**: 25 fish per rarity tier (Common, Uncommon, Rare, Epic, Legendary, Mythical, Universal)
 - **Size Variations**: Tiny, Small, Medium, Large, and Huge fish affect value
 - **Most Valuable Fish Display**: Track your best catch in the backpack
 
@@ -149,15 +149,16 @@ See `DEPLOYMENT.md` for detailed instructions.
 ## 🎣 Game Mechanics
 
 ### Rarity System
-Rarities are configurable via `RARITY_CONFIG` in `game.js`:
+Rarities are configurable via `RARITY_CONFIG` in `js/fish.js`:
 - Easy to adjust QTE counts and timings for testing
 - Each rarity has multiplier, color, spawn chance, QTE time, and QTE count
+- 7 rarity tiers: Common, Uncommon, Rare, Epic, Legendary, Mythical, Universal
 
 ### Fish Generation
-- Random fish type from 18 available types
+- Random fish type from 175 available types (25 per rarity)
 - Rarity determined by weighted chance
 - Size determined by weighted chance
-- Value = baseValue × rarityMultiplier × sizeMultiplier
+- Value = baseValue × rarityMultiplier × sizeMultiplier × eventMultiplier
 
 ### QTE System
 - Desktop: Press displayed keys (A, S, D, W, E, Q, R, F)
@@ -168,7 +169,7 @@ Rarities are configurable via `RARITY_CONFIG` in `game.js`:
 ## 🔧 Configuration
 
 ### API Base URL
-Set in `public/config.js`:
+Set in `config.js`:
 ```javascript
 const API_BASE_URL = window.location.origin; // Uses same origin
 ```
