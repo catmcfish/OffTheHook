@@ -1,121 +1,215 @@
-# 8-Bit Fishing Adventure - Cloud Run Deployment
+# 8-Bit Fishing Adventure
 
-This fishing game is configured to run on Google Cloud Run with Firestore for persistent storage.
+A retro-style fishing game built with HTML5 Canvas, featuring QTE (Quick Time Event) challenges, persistent user accounts, and a global leaderboard system.
 
-## Setup Instructions
+## 🎮 Features
 
-### 1. Prerequisites
-- Google Cloud account with billing enabled
-- Node.js 18+ installed locally
-- Google Cloud SDK (gcloud) installed
-- Firebase project created
+### Gameplay
+- **Fishing Mechanics**: Cast your line, wait for a bite, then complete QTE challenges to catch fish
+- **7 Rarity Tiers**: Common, Uncommon, Rare, Epic, Legendary, Mythical, and Universal
+- **Dynamic QTE System**: Each rarity has different QTE requirements:
+  - Common: 3 QTEs, 1.5s each
+  - Uncommon: 4 QTEs, 1.25s each
+  - Rare: 5 QTEs, 1s each
+  - Epic: 6 QTEs, 0.9s each
+  - Legendary: 10 QTEs, 0.9s each
+  - Mythical: 20 QTEs, 0.9s each
+  - Universal: 50 QTEs, 0.9s each
+- **18 Unique Fish Types**: From Glowfin to Omnipotent Oarfish
+- **Size Variations**: Tiny, Small, Medium, Large, and Huge fish affect value
+- **Most Valuable Fish Display**: Track your best catch in the backpack
 
-### 2. Firebase Setup
+### User Features
+- **User Accounts**: Register and login with encrypted passwords
+- **Persistent Data**: Gold, fish count, and inventory saved to database
+- **Settings System**: 
+  - Toggle rain effects
+  - Toggle grass/vegetation
+  - Settings sync across devices
+- **Global Leaderboard**: Top 100 most valuable fish across all users
+- **Backpack**: View all caught fish with details
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project or use existing one
-3. Enable Firestore Database:
-   - Go to Firestore Database
-   - Click "Create database"
-   - Start in production mode
-   - Choose a location
-4. Create a service account:
-   - Go to Project Settings > Service Accounts
-   - Click "Generate new private key"
-   - Save the JSON file as `firebase-admin-key.json` (DO NOT commit this!)
+### Visual Features
+- **8-Bit Pixel Art Style**: Retro aesthetic with pixelated graphics
+- **Dynamic Weather**: Rain particles (toggleable)
+- **Water Effects**: Animated ripples in water (when rain enabled)
+- **Beach Scene**: Curved beach transitioning to ocean
 
-### 3. Local Development Setup
+## 🚀 Quick Start
 
-1. Install dependencies:
+### Local Development
+
+1. **Install dependencies:**
 ```bash
 npm install
 ```
 
-2. Set up Firebase Admin credentials:
+2. **Set up Firebase credentials:**
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS="./firebase-admin-key.json"
 ```
 
-3. Run the server locally:
+3. **Start the server:**
 ```bash
 npm start
-# or for development with auto-reload:
-npm run dev
 ```
 
-4. The frontend should be served from `public/` directory. Update your `game.js` to use the API endpoints.
+4. **Open in browser:**
+```
+http://localhost:8080
+```
 
-### 4. Deploy to Cloud Run
+### Prerequisites
 
-#### Option A: Using Cloud Build (Recommended)
+- Node.js 18+ 
+- Firebase project with Firestore enabled
+- Google Cloud account (for deployment)
 
-1. Enable required APIs:
+## 📦 Deployment
+
+### Deploy to Google Cloud Run
+
+1. **Enable required APIs:**
 ```bash
+gcloud services enable firestore.googleapis.com
 gcloud services enable cloudbuild.googleapis.com
 gcloud services enable run.googleapis.com
-gcloud services enable containerregistry.googleapis.com
 ```
 
-2. Create a Secret Manager secret for Firebase credentials:
-```bash
-gcloud secrets create firebase-admin-key --data-file=firebase-admin-key.json
-```
+2. **Create Firestore database** in Firebase Console
 
-3. Grant Cloud Run access to the secret:
-```bash
-gcloud secrets add-iam-policy-binding firebase-admin-key \
-  --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
-```
-
-4. Build and deploy:
+3. **Deploy:**
 ```bash
 gcloud builds submit --config cloudbuild.yaml
 ```
 
-#### Option B: Manual Deployment
+See `DEPLOYMENT.md` for detailed instructions.
 
-1. Build the Docker image:
-```bash
-docker build -t gcr.io/YOUR_PROJECT_ID/fishing-game .
+## 🏗️ Project Structure
+
+```
+.
+├── server.js              # Express.js backend API
+├── package.json           # Node.js dependencies
+├── Dockerfile             # Container configuration
+├── cloudbuild.yaml        # Cloud Build deployment config
+├── public/                # Frontend files
+│   ├── index.html         # Main HTML
+│   ├── game.js            # Game logic and API calls
+│   ├── style.css          # Styling
+│   └── config.js          # API configuration
+├── index.html             # (copied to public/)
+├── game.js                # (copied to public/)
+└── style.css              # (copied to public/)
 ```
 
-2. Push to Container Registry:
-```bash
-docker push gcr.io/YOUR_PROJECT_ID/fishing-game
+## 🗄️ Database Schema
+
+### Firestore Collections
+
+- **`users`**: User accounts
+  - `username` (string)
+  - `passwordHash` (string, SHA-256)
+  - `createdAt` (timestamp)
+
+- **`userData`**: Game progress
+  - `username` (string)
+  - `gold` (number)
+  - `fishCount` (number)
+  - `inventory` (array of fish objects)
+  - `settings` (object: `{rainEnabled, grassEnabled}`)
+  - `updatedAt` (timestamp)
+
+- **`leaderboard`**: Top 100 fish
+  - `username` (string)
+  - `fishName` (string)
+  - `fishRarity` (string)
+  - `fishSize` (string)
+  - `fishValue` (number)
+  - `fishRarityColor` (string)
+  - `timestamp` (timestamp)
+
+## 🎣 Game Mechanics
+
+### Rarity System
+Rarities are configurable via `RARITY_CONFIG` in `game.js`:
+- Easy to adjust QTE counts and timings for testing
+- Each rarity has multiplier, color, spawn chance, QTE time, and QTE count
+
+### Fish Generation
+- Random fish type from 18 available types
+- Rarity determined by weighted chance
+- Size determined by weighted chance
+- Value = baseValue × rarityMultiplier × sizeMultiplier
+
+### QTE System
+- Desktop: Press displayed keys (A, S, D, W, E, Q, R, F)
+- Mobile: Tap displayed locations
+- Timer countdown with visual feedback
+- Must complete all QTEs within time limit
+
+## 🔧 Configuration
+
+### API Base URL
+Set in `public/config.js`:
+```javascript
+const API_BASE_URL = window.location.origin; // Uses same origin
 ```
 
-3. Deploy to Cloud Run:
-```bash
-gcloud run deploy fishing-game \
-  --image gcr.io/YOUR_PROJECT_ID/fishing-game \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-secrets=GOOGLE_APPLICATION_CREDENTIALS=firebase-admin-key:latest
+### Firebase Project ID
+Set in `server.js` or via environment variable:
+```javascript
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'offthehook-70d8a';
 ```
 
-### 5. Update Frontend API Configuration
+## 🛠️ API Endpoints
 
-Update `game.js` to use your Cloud Run URL. The API base URL should be set to your Cloud Run service URL.
+- `POST /api/register` - Register new user
+- `POST /api/login` - User login
+- `GET /api/user-data/:username` - Get user game data
+- `POST /api/user-data/:username` - Save user game data
+- `GET /api/leaderboard` - Get top 100 leaderboard
+- `POST /api/leaderboard` - Update leaderboard
+- `GET /health` - Health check with Firestore status
 
-## Firestore Collections
+## 🔒 Security
 
-The application uses the following Firestore collections:
+- Passwords hashed with SHA-256 (server-side)
+- User data stored securely in Firestore
+- CORS enabled (restrict in production)
+- API endpoints unauthenticated (add auth middleware for production)
 
-- `users` - User accounts (username, passwordHash)
-- `userData` - User game data (gold, fishCount, inventory)
-- `leaderboard` - Top 100 most valuable fish
-
-## Environment Variables
+## 📝 Environment Variables
 
 - `PORT` - Server port (default: 8080)
-- `GOOGLE_APPLICATION_CREDENTIALS` - Path to Firebase Admin SDK credentials
-- `NODE_ENV` - Set to "production" for production builds
+- `FIREBASE_PROJECT_ID` - Firebase project ID (default: offthehook-70d8a)
+- `GOOGLE_APPLICATION_CREDENTIALS` - Path to Firebase Admin credentials
+- `NODE_ENV` - Environment mode
 
-## Security Notes
+## 🐛 Troubleshooting
 
-- Passwords are hashed using SHA-256 (consider upgrading to bcrypt for production)
-- CORS is enabled for all origins (restrict in production)
-- API endpoints are unauthenticated (add authentication middleware for production)
+### Common Issues
 
+**"PERMISSION_DENIED" errors:**
+- Enable Firestore API in Google Cloud Console
+- Grant Cloud Run service account `roles/datastore.user` permission
+- See `VERIFY_PERMISSIONS.md` for details
+
+**"NOT_FOUND" errors:**
+- Create Firestore database in Firebase Console
+- See `CREATE_FIRESTORE_DB.md` for instructions
+
+**Settings not saving:**
+- Check user is logged in
+- Verify Firestore permissions
+- Check browser console for errors
+
+## 📄 License
+
+See `LICENSE` file for details.
+
+## 🎨 Credits
+
+- 8-bit pixel art style
+- Retro fishing game mechanics
+- Built with vanilla JavaScript and HTML5 Canvas
