@@ -89,18 +89,35 @@ See `DEPLOYMENT.md` for detailed instructions.
 
 ```
 .
-├── server.js              # Express.js backend API
+├── server.js              # Express.js backend API (main entry point)
 ├── package.json           # Node.js dependencies
 ├── Dockerfile             # Container configuration
 ├── cloudbuild.yaml        # Cloud Build deployment config
-├── public/                # Frontend files
-│   ├── index.html         # Main HTML
-│   ├── game.js            # Game logic and API calls
-│   ├── style.css          # Styling
-│   └── config.js          # API configuration
-├── index.html             # (copied to public/)
-├── game.js                # (copied to public/)
-└── style.css              # (copied to public/)
+├── server/                # Server-side modules
+│   ├── routes/
+│   │   ├── auth.js        # Authentication routes
+│   │   ├── userData.js    # User data routes
+│   │   └── leaderboard.js # Leaderboard routes
+│   └── utils/
+│       ├── firebase.js    # Firebase initialization
+│       ├── errors.js      # Error handling utilities
+│       └── auth.js        # Password hashing utilities
+├── js/                    # Client-side modules
+│   ├── gameState.js       # Game state management
+│   ├── fish.js            # Fish types and generation
+│   ├── events.js          # Time of day and events
+│   ├── environment.js     # Rain particles, water ripples
+│   ├── drawing.js         # All drawing functions
+│   ├── rendering.js       # Main rendering loop
+│   ├── qte.js             # Quick Time Event system
+│   ├── gameLogic.js       # Casting and catching logic
+│   ├── ui.js              # UI management
+│   ├── api.js             # API client functions
+│   └── utils.js           # Utility functions
+├── index.html             # Main HTML (includes all modules)
+├── game.js                # Game initialization and event listeners
+├── style.css              # All styling (desktop + mobile)
+└── config.js              # API configuration
 ```
 
 ## 🗄️ Database Schema
