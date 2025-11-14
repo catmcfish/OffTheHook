@@ -40,6 +40,9 @@ function resizeCanvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         initRainParticles();
+        // Clear ripples on resize
+        waterRipples = [];
+        lastRippleSpawn = 0;
     }
 }
 
@@ -148,6 +151,33 @@ function initRainParticles() {
             speed: 2 + Math.random() * 3
         });
     }
+}
+
+// Water ripples system
+let waterRipples = [];
+let lastRippleSpawn = 0;
+const RIPPLE_SPAWN_INTERVAL = 1500; // Spawn a ripple every 1.5 seconds on average
+const RIPPLE_LIFETIME = 2000; // Ripples last 2 seconds
+
+function spawnRipple() {
+    if (!canvas) return;
+    
+    const waterLevel = canvas.height * 0.6;
+    const landEndX = canvas.width * 0.4;
+    
+    // Spawn ripple randomly in water area
+    const x = landEndX + Math.random() * (canvas.width - landEndX);
+    const y = waterLevel + Math.random() * (canvas.height - waterLevel);
+    
+    waterRipples.push({
+        x: x,
+        y: y,
+        radius: 2,
+        maxRadius: 15 + Math.random() * 10,
+        opacity: 0.6,
+        spawnTime: Date.now(),
+        lifetime: RIPPLE_LIFETIME
+    });
 }
 
 // Rain particles will be initialized when canvas is ready
@@ -331,8 +361,10 @@ function draw() {
         }
     }
     
-    // Draw water bubbles
-    drawBubbles();
+    // Draw water ripples (if rain is enabled)
+    if (gameState.settings.rainEnabled) {
+        drawRipples();
+    }
 }
 
 function drawCharacter(x, y, facingRight = false) {
@@ -418,21 +450,56 @@ function drawFish(x, y, fish) {
     ctx.restore();
 }
 
-function drawBubbles() {
-    // Draw bubbles in water (in the ocean area)
-    const waterLevel = canvas.height * 0.6;
-    const landEndX = canvas.width * 0.4;
-    for (let i = 0; i < 8; i++) {
-        // Bubbles should be in the water area (right of beach curve)
-        const x = landEndX * 0.5 + Math.random() * (canvas.width - landEndX * 0.5);
-        const y = waterLevel + Math.random() * (canvas.height - waterLevel);
-        const size = Math.random() * 4 + 2;
+function drawRipples() {
+    if (!canvas) return;
+    
+    const now = Date.now();
+    
+    // Spawn new ripples randomly (but not too frequently)
+    if (now - lastRippleSpawn > RIPPLE_SPAWN_INTERVAL + Math.random() * 1000) {
+        // Random chance to spawn (not every interval)
+        if (Math.random() < 0.7) {
+            spawnRipple();
+            lastRippleSpawn = now;
+        }
+    }
+    
+    // Update and draw existing ripples
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 1.5;
+    
+    for (let i = waterRipples.length - 1; i >= 0; i--) {
+        const ripple = waterRipples[i];
         
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.lineWidth = 1;
+        // Calculate age based on actual time
+        const age = now - ripple.spawnTime;
+        const progress = age / ripple.lifetime;
+        
+        if (progress >= 1) {
+            // Remove expired ripples
+            waterRipples.splice(i, 1);
+            continue;
+        }
+        
+        // Calculate current radius (expands over time)
+        ripple.radius = ripple.maxRadius * progress;
+        
+        // Calculate opacity (fades out)
+        const opacity = ripple.opacity * (1 - progress);
+        
+        // Draw ripple
+        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
         ctx.beginPath();
-        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
         ctx.stroke();
+        
+        // Draw inner ring for more detail
+        if (ripple.radius > 5) {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
+            ctx.beginPath();
+            ctx.arc(ripple.x, ripple.y, ripple.radius * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+        }
     }
 }
 
