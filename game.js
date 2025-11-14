@@ -29,6 +29,18 @@ const gameState = {
         rainEnabled: true,
         grassEnabled: true
     },
+    character: {
+        // Character customization - modular parts
+        skinColor: '#ffdbac',      // Skin tone
+        hairColor: '#8b4513',      // Hair color
+        hairStyle: 'default',      // Hair style: 'default', 'short', 'long', 'bald'
+        shirtColor: '#4a5568',      // Shirt/torso color
+        pantsColor: '#2c3e50',     // Pants color
+        hatColor: '#d4af37',       // Hat color
+        hatStyle: 'cap',           // Hat style: 'cap', 'none', 'beanie', 'crown'
+        accessoryColor: '#dc2626',  // Scarf/cape color
+        accessoryType: 'scarf'     // Accessory: 'scarf', 'cape', 'none'
+    },
     timeOfDay: 'day', // 'morning', 'noon', 'afternoon', 'night'
     currentEvent: null, // Current synchronous event
     isAdmin: false, // Set from database userData.isAdmin
@@ -369,38 +381,107 @@ function draw() {
     const curveControlY = waterLevel - 110;
     const curveEndY = canvas.height; // End point of curve (where beach meets water)
     
-    const waterGradient = ctx.createLinearGradient(0, waterLevel, 0, canvas.height);
-    waterGradient.addColorStop(0, '#1e3c72');
-    waterGradient.addColorStop(0.5, '#2a4a7a');
-    waterGradient.addColorStop(1, '#0f1f3d');
-    ctx.fillStyle = waterGradient;
-    // Water is at static height - horizontal line
-    ctx.fillRect(0, waterLevel, canvas.width, canvas.height - waterLevel);
+    // Draw pixelated ocean (8-bit style)
+    // Use solid colors in pixel blocks instead of gradients
+    const pixelSize = 8; // Size of each pixel block
+    ctx.fillStyle = '#1e3c72'; // Base ocean color
     
-    // Draw land/beach (brown) - left side, curving down into ocean
+    // Draw ocean in pixel blocks for 8-bit look
+    for (let y = Math.floor(waterLevel / pixelSize) * pixelSize; y < canvas.height; y += pixelSize) {
+        for (let x = 0; x < canvas.width; x += pixelSize) {
+            // Create depth effect with different shades
+            const depth = (y - waterLevel) / (canvas.height - waterLevel);
+            if (depth < 0.3) {
+                ctx.fillStyle = '#2a4a7a'; // Lighter blue near surface
+            } else if (depth < 0.6) {
+                ctx.fillStyle = '#1e3c72'; // Medium blue
+            } else {
+                ctx.fillStyle = '#0f1f3d'; // Dark blue at bottom
+            }
+            
+            // Add some pixelated wave pattern (checkerboard effect)
+            const wavePattern = Math.floor((x + y * 0.5) / (pixelSize * 2)) % 2;
+            if (wavePattern === 0 && depth < 0.4) {
+                ctx.fillStyle = '#3a5a8a'; // Slightly lighter for wave effect
+            }
+            
+            ctx.fillRect(x, y, pixelSize, pixelSize);
+        }
+    }
+    
+    // Draw pixelated beach (8-bit style)
     // Draw beach AFTER water so it appears on top
-    ctx.fillStyle = '#8b6f47';
-    ctx.beginPath();
-    ctx.moveTo(landStartX, 0);
-    ctx.lineTo(landStartX, beachStartY);
-    // Create a more pronounced curve down and to the right into ocean
-    ctx.quadraticCurveTo(curveControlX, curveControlY, landEndX, curveEndY);
-    ctx.lineTo(landEndX, canvas.height);
-    ctx.lineTo(landStartX, canvas.height);
-    ctx.closePath();
-    ctx.fill();
+    const beachPixelSize = 8;
+    ctx.fillStyle = '#8b6f47'; // Beach brown color
     
-    // Draw grass/vegetation on top of land (along the curve) - if enabled
+    // Draw beach in pixel blocks, following the curve
+    for (let y = Math.floor(beachStartY / beachPixelSize) * beachPixelSize; y < canvas.height; y += beachPixelSize) {
+        for (let x = 0; x < landEndX; x += beachPixelSize) {
+            // Calculate if this pixel is on the beach side of the curve
+            const t = x / landEndX;
+            const curveY = (1 - t) * (1 - t) * beachStartY + 2 * (1 - t) * t * curveControlY + t * t * curveEndY;
+            
+            // Check if pixel is on beach (left of curve or below curve)
+            if (x < landStartX || y >= curveY) {
+                // Add some texture variation
+                const texture = Math.floor((x + y * 0.7) / (beachPixelSize * 3)) % 3;
+                if (texture === 0) {
+                    ctx.fillStyle = '#9b7f57'; // Slightly lighter
+                } else if (texture === 1) {
+                    ctx.fillStyle = '#7b5f37'; // Slightly darker
+                } else {
+                    ctx.fillStyle = '#8b6f47'; // Base color
+                }
+                
+                ctx.fillRect(x, y, beachPixelSize, beachPixelSize);
+            }
+        }
+    }
+    
+    // Draw beach edge pixels more precisely for smoother curve appearance
+    for (let x = 0; x < landEndX; x += beachPixelSize) {
+        const t = x / landEndX;
+        const curveY = (1 - t) * (1 - t) * beachStartY + 2 * (1 - t) * t * curveControlY + t * t * curveEndY;
+        const pixelY = Math.floor(curveY / beachPixelSize) * beachPixelSize;
+        
+        // Draw edge pixels
+        ctx.fillStyle = '#8b6f47';
+        ctx.fillRect(x, pixelY, beachPixelSize, beachPixelSize);
+        
+        // Add highlight pixels on curve edge
+        if (pixelY < canvas.height - beachPixelSize) {
+            ctx.fillStyle = '#9b7f57';
+            ctx.fillRect(x, pixelY - beachPixelSize, beachPixelSize, beachPixelSize);
+        }
+    }
+    
+    // Draw pixelated grass/vegetation on top of land (along the curve) - if enabled
     if (gameState.settings.grassEnabled) {
-        ctx.fillStyle = '#5a7c3a';
-        ctx.beginPath();
-        ctx.moveTo(landStartX, 0);
-        ctx.lineTo(landStartX, beachStartY);
-        ctx.quadraticCurveTo(curveControlX, curveControlY, landEndX, curveEndY);
-        ctx.lineTo(landEndX, curveEndY + 8);
-        ctx.quadraticCurveTo(curveControlX, curveControlY + 8, landStartX, beachStartY + 8);
-        ctx.closePath();
-        ctx.fill();
+        const grassPixelSize = 8;
+        ctx.fillStyle = '#5a7c3a'; // Grass green
+        
+        // Draw grass in pixel blocks along the curve
+        for (let x = 0; x < landEndX; x += grassPixelSize) {
+            const t = x / landEndX;
+            const curveY = (1 - t) * (1 - t) * beachStartY + 2 * (1 - t) * t * curveControlY + t * t * curveEndY;
+            const grassTopY = Math.floor(curveY / grassPixelSize) * grassPixelSize;
+            const grassHeight = Math.max(grassPixelSize, Math.floor(8 / grassPixelSize) * grassPixelSize);
+            
+            // Draw grass pixels with some variation
+            for (let y = grassTopY; y < grassTopY + grassHeight; y += grassPixelSize) {
+                const texture = Math.floor((x + y * 0.5) / (grassPixelSize * 2)) % 2;
+                if (texture === 0) {
+                    ctx.fillStyle = '#6a8c4a'; // Slightly lighter green
+                } else {
+                    ctx.fillStyle = '#5a7c3a'; // Base green
+                }
+                
+                // Only draw if on beach side
+                if (x < landStartX || y >= curveY) {
+                    ctx.fillRect(x, y, grassPixelSize, grassPixelSize);
+                }
+            }
+        }
     }
     
     // Calculate character position on beach (standing on the curve)
@@ -438,10 +519,15 @@ function draw() {
             gameState.bobberX = lineEndX;
             gameState.bobberY = lineEndY;
         } else if (gameState.isReeling) {
-            // When reeling, use the calculated position
+            // When reeling, bobber moves back towards character position
             const maxCastDistance = canvas.width * 0.4;
-            lineEndX = lineStartX + (gameState.lineDepth / gameState.maxDepth) * maxCastDistance;
-            lineEndY = waterLevel + 10 + (gameState.lineDepth / gameState.maxDepth) * 50;
+            const reelProgress = 1 - (gameState.lineDepth / gameState.maxDepth); // 0 = far, 1 = close
+            const farX = lineStartX + maxCastDistance;
+            const farY = waterLevel + 10;
+            
+            // Interpolate between far position and character position
+            lineEndX = farX + (lineStartX - farX) * reelProgress;
+            lineEndY = farY + (lineStartY - farY) * reelProgress;
         } else if (gameState.isCasting && gameState.bobberThrown && gameState.bobberThrowProgress >= 1) {
             // Bobber has landed, now line is going deeper
             const maxCastDistance = canvas.width * 0.4;
@@ -467,41 +553,20 @@ function draw() {
             lineEndY = lineStartY;
         }
         
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
-        ctx.beginPath();
-        ctx.moveTo(lineStartX, lineStartY);
-        ctx.lineTo(lineEndX, lineEndY);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        // Draw pixelated fishing line (8-bit style)
+        drawFishingLine(lineStartX, lineStartY, lineEndX, lineEndY);
         
-        // Draw bobber (either flying or in water)
+        // Draw pixelated bobber (8-bit style)
         if (gameState.bobberThrown || gameState.isReeling || (gameState.isCasting && gameState.bobberThrowProgress >= 1)) {
-            ctx.fillStyle = '#8b4513';
-            ctx.beginPath();
-            ctx.arc(lineEndX, lineEndY, 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#654321';
-            ctx.lineWidth = 1;
-            ctx.stroke();
+            drawBobber(lineEndX, lineEndY);
         }
         
-        // Draw fish if caught (with struggling animation, moving towards player)
+        // Draw fish if caught (with struggling animation, following the bobber)
         if (gameState.currentFish && gameState.isReeling) {
-            // Calculate how close the fish is to being reeled in (0 = far, 1 = close)
-            const reelProgress = 1 - (gameState.lineDepth / gameState.maxDepth);
-            
-            // Interpolate between line end position and character position
-            // As reelProgress increases, fish moves closer to character
-            const targetX = lineStartX;
-            const targetY = lineStartY;
-            const fishBaseX = lineEndX + (targetX - lineEndX) * reelProgress;
-            const fishBaseY = lineEndY + (targetY - lineEndY) * reelProgress;
-            
-            // Add struggle animation on top of the base position
-            const fishX = fishBaseX + Math.sin(gameState.struggleAnimation) * 12;
-            const fishY = fishBaseY + Math.cos(gameState.struggleAnimation * 0.7) * 8;
+            // Fish follows the bobber position (lineEndX, lineEndY)
+            // Add struggle animation offset from bobber position
+            const fishX = lineEndX + Math.sin(gameState.struggleAnimation) * 12;
+            const fishY = lineEndY + Math.cos(gameState.struggleAnimation * 0.7) * 8;
             drawFish(fishX, fishY, gameState.currentFish);
             
             // Update struggle animation
@@ -515,87 +580,639 @@ function draw() {
     }
 }
 
-function drawCharacter(x, y, facingRight = false) {
-    // 8-bit character side view (like Mario), standing on pier
-    const width = 16;
-    const height = 24;
+// Character customization system - modular 8-bit pixelated character
+const PIXEL_SIZE = 4; // Size of each pixel for 8-bit look
+
+// Draw character head (8-bit pixelated)
+function drawCharacterHead(x, y, facingRight, skinColor) {
     const direction = facingRight ? 1 : -1;
+    const px = PIXEL_SIZE;
     
-    // Body (standing, side view)
-    ctx.fillStyle = '#4a5568';
-    ctx.fillRect(x - width/2, y - height, width, height);
+    // Head shape (side view, pixelated)
+    ctx.fillStyle = skinColor;
+    // Head pixels - creating a rounded head shape
+    const headPixels = [
+        [0, 0, 1, 1, 1, 0],
+        [0, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1],
+        [0, 0, 1, 1, 1, 0]
+    ];
     
-    // Head (side view, circular-ish)
-    ctx.fillStyle = '#ffdbac';
-    ctx.beginPath();
-    ctx.arc(x, y - height - 8, 8, 0, Math.PI * 2);
-    ctx.fill();
+    for (let row = 0; row < headPixels.length; row++) {
+        for (let col = 0; col < headPixels[row].length; col++) {
+            if (headPixels[row][col] === 1) {
+                ctx.fillRect(x + (col - 3) * px * direction, y - 24 + row * px, px, px);
+            }
+        }
+    }
     
-    // Hat/Helmet (golden colored, side view)
-    ctx.fillStyle = '#d4af37';
-    ctx.fillRect(x - 8, y - height - 12, 16, 6);
-    ctx.fillRect(x - 6, y - height - 16, 12, 4);
-    
-    // Scarf/Cape (red) - hanging down on the side facing away from direction
-    ctx.fillStyle = '#dc2626';
-    ctx.fillRect(x - width/2 - (direction * 2), y - height + 4, 4, height - 8);
-    
-    // Eyes (side view, facing the direction)
+    // Eye (side view, facing direction)
     ctx.fillStyle = '#000000';
-    ctx.fillRect(x + (direction * 2), y - height - 6, 2, 2);
+    ctx.fillRect(x + (direction * 2 * px), y - 20, px, px);
+}
+
+// Draw character hair (8-bit pixelated)
+function drawCharacterHair(x, y, facingRight, hairColor, hairStyle) {
+    const direction = facingRight ? 1 : -1;
+    const px = PIXEL_SIZE;
     
-    // Arms (side view)
-    ctx.fillStyle = '#ffdbac';
-    ctx.fillRect(x - width/2 - 4, y - height + 6, 4, 8);
-    ctx.fillRect(x + width/2, y - height + 6, 4, 8);
+    if (hairStyle === 'bald') return;
     
-    // Fishing rod (when fishing) - golden rod, pointing forward in facing direction
-    if (gameState.isCasting || gameState.isReeling) {
-        ctx.strokeStyle = '#d4af37';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(x + (direction * width/2), y - height + 10);
-        ctx.lineTo(x + (direction * 25), y - height - 5);
-        ctx.stroke();
+    ctx.fillStyle = hairColor;
+    
+    if (hairStyle === 'default' || hairStyle === 'short') {
+        // Short hair pixels
+        const hairPixels = [
+            [1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1],
+            [0, 1, 1, 1, 0]
+        ];
+        for (let row = 0; row < hairPixels.length; row++) {
+            for (let col = 0; col < hairPixels[row].length; col++) {
+                if (hairPixels[row][col] === 1) {
+                    ctx.fillRect(x + (col - 2) * px * direction, y - 26 + row * px, px, px);
+                }
+            }
+        }
+    } else if (hairStyle === 'long') {
+        // Long hair pixels
+        const hairPixels = [
+            [1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1],
+            [0, 1, 1, 1, 1],
+            [0, 0, 1, 1, 0]
+        ];
+        for (let row = 0; row < hairPixels.length; row++) {
+            for (let col = 0; col < hairPixels[row].length; col++) {
+                if (hairPixels[row][col] === 1) {
+                    ctx.fillRect(x + (col - 2) * px * direction, y - 28 + row * px, px, px);
+                }
+            }
+        }
     }
 }
 
-function drawFish(x, y, fish) {
-    const baseSize = 20;
-    const sizeMultiplier = fish.size === 'Tiny' ? 0.7 : fish.size === 'Small' ? 0.85 : fish.size === 'Large' ? 1.3 : fish.size === 'Huge' ? 1.8 : 1.0;
-    const size = baseSize * sizeMultiplier;
+// Draw character hat (8-bit pixelated)
+function drawCharacterHat(x, y, facingRight, hatColor, hatStyle) {
+    const direction = facingRight ? 1 : -1;
+    const px = PIXEL_SIZE;
     
-    // Fish body with struggling motion
+    if (hatStyle === 'none') return;
+    
+    ctx.fillStyle = hatColor;
+    
+    if (hatStyle === 'cap') {
+        // Cap pixels
+        const capPixels = [
+            [0, 1, 1, 1, 1, 1, 0],
+            [1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 1, 1, 1, 0, 0]
+        ];
+        for (let row = 0; row < capPixels.length; row++) {
+            for (let col = 0; col < capPixels[row].length; col++) {
+                if (capPixels[row][col] === 1) {
+                    ctx.fillRect(x + (col - 3) * px * direction, y - 30 + row * px, px, px);
+                }
+            }
+        }
+    } else if (hatStyle === 'beanie') {
+        // Beanie pixels
+        const beaniePixels = [
+            [1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1],
+            [0, 1, 1, 1, 0]
+        ];
+        for (let row = 0; row < beaniePixels.length; row++) {
+            for (let col = 0; col < beaniePixels[row].length; col++) {
+                if (beaniePixels[row][col] === 1) {
+                    ctx.fillRect(x + (col - 2) * px * direction, y - 30 + row * px, px, px);
+                }
+            }
+        }
+    } else if (hatStyle === 'crown') {
+        // Crown pixels
+        const crownPixels = [
+            [1, 0, 1, 0, 1],
+            [1, 1, 1, 1, 1],
+            [0, 1, 1, 1, 0]
+        ];
+        for (let row = 0; row < crownPixels.length; row++) {
+            for (let col = 0; col < crownPixels[row].length; col++) {
+                if (crownPixels[row][col] === 1) {
+                    ctx.fillRect(x + (col - 2) * px * direction, y - 30 + row * px, px, px);
+                }
+            }
+        }
+    }
+}
+
+// Draw character body/torso (8-bit pixelated)
+function drawCharacterBody(x, y, facingRight, shirtColor) {
+    const direction = facingRight ? 1 : -1;
+    const px = PIXEL_SIZE;
+    
+    ctx.fillStyle = shirtColor;
+    // Body pixels (torso)
+    const bodyPixels = [
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0]
+    ];
+    
+    for (let row = 0; row < bodyPixels.length; row++) {
+        for (let col = 0; col < bodyPixels[row].length; col++) {
+            if (bodyPixels[row][col] === 1) {
+                ctx.fillRect(x + (col - 2) * px * direction, y - 18 + row * px, px, px);
+            }
+        }
+    }
+}
+
+// Draw character pants (8-bit pixelated)
+function drawCharacterPants(x, y, facingRight, pantsColor) {
+    const direction = facingRight ? 1 : -1;
+    const px = PIXEL_SIZE;
+    
+    ctx.fillStyle = pantsColor;
+    // Pants pixels (legs)
+    const pantsPixels = [
+        [1, 0, 0, 1],
+        [1, 0, 0, 1],
+        [1, 0, 0, 1],
+        [1, 1, 1, 1]
+    ];
+    
+    for (let row = 0; row < pantsPixels.length; row++) {
+        for (let col = 0; col < pantsPixels[row].length; col++) {
+            if (pantsPixels[row][col] === 1) {
+                ctx.fillRect(x + (col - 1.5) * px * direction, y - 4 + row * px, px, px);
+            }
+        }
+    }
+}
+
+// Draw character arms (8-bit pixelated)
+function drawCharacterArms(x, y, facingRight, skinColor) {
+    const direction = facingRight ? 1 : -1;
+    const px = PIXEL_SIZE;
+    
+    ctx.fillStyle = skinColor;
+    // Arms pixels (side view)
+    // Back arm
+    ctx.fillRect(x - 2 * px * direction, y - 14, px, 2 * px);
+    // Front arm
+    ctx.fillRect(x + 2 * px * direction, y - 14, px, 2 * px);
+}
+
+// Draw character accessory (scarf/cape) (8-bit pixelated)
+function drawCharacterAccessory(x, y, facingRight, accessoryColor, accessoryType) {
+    const direction = facingRight ? 1 : -1;
+    const px = PIXEL_SIZE;
+    
+    if (accessoryType === 'none') return;
+    
+    ctx.fillStyle = accessoryColor;
+    
+    if (accessoryType === 'scarf') {
+        // Scarf pixels (hanging down on back side)
+        const scarfPixels = [
+            [1],
+            [1],
+            [1],
+            [1],
+            [1]
+        ];
+        for (let row = 0; row < scarfPixels.length; row++) {
+            ctx.fillRect(x - 2 * px * direction, y - 16 + row * px, px, px);
+        }
+    } else if (accessoryType === 'cape') {
+        // Cape pixels (larger, flowing)
+        const capePixels = [
+            [1, 1],
+            [1, 1],
+            [1, 1],
+            [1, 1],
+            [1, 1],
+            [1, 0]
+        ];
+        for (let row = 0; row < capePixels.length; row++) {
+            for (let col = 0; col < capePixels[row].length; col++) {
+                if (capePixels[row][col] === 1) {
+                    ctx.fillRect(x + (col - 2) * px * direction, y - 18 + row * px, px, px);
+                }
+            }
+        }
+    }
+}
+
+// Main character drawing function - modular and customizable
+function drawCharacter(x, y, facingRight = false) {
+    const char = gameState.character;
+    
+    // Draw character parts in order (back to front)
+    // 1. Accessory (scarf/cape) - drawn first so it's behind
+    drawCharacterAccessory(x, y, facingRight, char.accessoryColor, char.accessoryType);
+    
+    // 2. Body/torso
+    drawCharacterBody(x, y, facingRight, char.shirtColor);
+    
+    // 3. Pants
+    drawCharacterPants(x, y, facingRight, char.pantsColor);
+    
+    // 4. Arms
+    drawCharacterArms(x, y, facingRight, char.skinColor);
+    
+    // 5. Head
+    drawCharacterHead(x, y, facingRight, char.skinColor);
+    
+    // 6. Hair (drawn after head but before hat)
+    drawCharacterHair(x, y, facingRight, char.hairColor, char.hairStyle);
+    
+    // 7. Hat (drawn last so it's on top)
+    drawCharacterHat(x, y, facingRight, char.hatColor, char.hatStyle);
+    
+    // 8. Fishing rod (when fishing) - 8-bit pixelated rod, pointing forward
+    if (gameState.isCasting || gameState.isReeling) {
+        drawFishingRod(x, y, facingRight);
+    }
+}
+
+// Draw 8-bit pixelated fishing rod
+function drawFishingRod(x, y, facingRight) {
+    const direction = facingRight ? 1 : -1;
+    const px = PIXEL_SIZE;
+    const rodColor = '#d4af37'; // Golden color
+    
+    ctx.fillStyle = rodColor;
+    
+    // Rod pixels - diagonal line from character's hand
+    const rodStartX = x + (direction * 2 * px);
+    const rodStartY = y - 14;
+    const rodEndX = x + (direction * 6 * px);
+    const rodEndY = y - 20;
+    
+    // Draw rod as pixelated line
+    const steps = 8;
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const rodX = Math.floor((rodStartX + (rodEndX - rodStartX) * t) / px) * px;
+        const rodY = Math.floor((rodStartY + (rodEndY - rodStartY) * t) / px) * px;
+        ctx.fillRect(rodX, rodY, px, px);
+    }
+}
+
+// Draw 8-bit pixelated fishing line
+function drawFishingLine(startX, startY, endX, endY) {
+    const px = PIXEL_SIZE;
+    ctx.fillStyle = '#ffffff';
+    
+    // Calculate line distance
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance < px) return; // Don't draw if too short
+    
+    // Draw dashed line in 8-bit style
+    const dashLength = px * 3; // Longer dashes for visibility
+    const gapLength = px * 2;
+    const segmentLength = dashLength + gapLength;
+    
+    // Draw line segments
+    let currentDistance = 0;
+    while (currentDistance < distance) {
+        const tStart = currentDistance / distance;
+        const tEnd = Math.min((currentDistance + dashLength) / distance, 1);
+        
+        // Draw dash segment
+        const dashSteps = Math.max(1, Math.floor((tEnd - tStart) * distance / px));
+        for (let j = 0; j < dashSteps; j++) {
+            const t = tStart + (j / dashSteps) * (tEnd - tStart);
+            const lineX = Math.floor((startX + dx * t) / px) * px;
+            const lineY = Math.floor((startY + dy * t) / px) * px;
+            ctx.fillRect(lineX, lineY, px, px);
+        }
+        
+        currentDistance += segmentLength;
+    }
+    
+    // Also draw a continuous thin line for better visibility
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    const continuousSteps = Math.floor(distance / px);
+    for (let i = 0; i <= continuousSteps; i++) {
+        const t = i / continuousSteps;
+        const lineX = Math.floor((startX + dx * t) / px) * px;
+        const lineY = Math.floor((startY + dy * t) / px) * px;
+        ctx.fillRect(lineX, lineY, px, px);
+    }
+}
+
+// Draw 8-bit pixelated bobber
+function drawBobber(x, y) {
+    const px = PIXEL_SIZE;
+    
+    // Bobber pixels - circular shape approximated with pixels
+    const bobberRadius = 6;
+    const bobberColor = '#8b4513'; // Brown
+    const bobberOutline = '#654321'; // Darker brown
+    
+    ctx.fillStyle = bobberColor;
+    
+    // Draw bobber as pixelated circle
+    const startX = Math.floor((x - bobberRadius) / px) * px;
+    const endX = Math.ceil((x + bobberRadius) / px) * px;
+    const startY = Math.floor((y - bobberRadius) / px) * px;
+    const endY = Math.ceil((y + bobberRadius) / px) * px;
+    
+    for (let pxX = startX; pxX <= endX; pxX += px) {
+        for (let pxY = startY; pxY <= endY; pxY += px) {
+            const dx = pxX - x;
+            const dy = pxY - y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < bobberRadius - 1) {
+                // Inner fill
+                ctx.fillStyle = bobberColor;
+                ctx.fillRect(pxX, pxY, px, px);
+            } else if (dist < bobberRadius + 1) {
+                // Outline
+                ctx.fillStyle = bobberOutline;
+                ctx.fillRect(pxX, pxY, px, px);
+            }
+        }
+    }
+    
+    // Add highlight pixel for 8-bit look
+    ctx.fillStyle = '#a0522d'; // Lighter brown
+    ctx.fillRect(Math.floor((x - 2) / px) * px, Math.floor((y - 2) / px) * px, px, px);
+}
+
+// Draw 8-bit pixelated fish with unique designs per type
+function drawFish(x, y, fish) {
+    const px = PIXEL_SIZE;
+    const baseSize = 16; // Base size in pixels
+    const sizeMultiplier = fish.size === 'Tiny' ? 0.7 : fish.size === 'Small' ? 0.85 : fish.size === 'Large' ? 1.3 : fish.size === 'Huge' ? 1.8 : 1.0;
+    const size = Math.floor(baseSize * sizeMultiplier / px) * px; // Snap to pixel grid
+    
+    // Apply struggle animation rotation
+    const rotation = Math.sin(gameState.struggleAnimation) * 0.2;
+    
     ctx.save();
     ctx.translate(x, y);
-    ctx.rotate(Math.sin(gameState.struggleAnimation) * 0.2);
+    ctx.rotate(rotation);
     
-    ctx.fillStyle = fish.color;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, size, size / 2, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Draw special effects for event/legendary/mythical fish (before translation)
+    const isSpecial = fish.isEventFish || fish.rarity === 'Legendary' || fish.rarity === 'Mythical';
+    if (isSpecial) {
+        drawFishSpecialEffects(0, 0, fish, size, px);
+    }
     
-    // Fish tail (wiggling)
-    ctx.fillStyle = fish.color;
-    ctx.beginPath();
-    ctx.moveTo(-size, 0);
-    ctx.lineTo(-size - size/2, -size/3);
-    ctx.lineTo(-size - size/2, size/3);
-    ctx.closePath();
-    ctx.fill();
-    
-    // Fish eye
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(size / 3, -size / 4, 3, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(size / 3, -size / 4, 2, 0, Math.PI * 2);
-    ctx.fill();
+    // Draw fish based on type
+    drawFishByType(0, 0, fish, size, px);
     
     ctx.restore();
+}
+
+// Draw special effects around special fish
+function drawFishSpecialEffects(x, y, fish, size, px) {
+    const time = Date.now() * 0.005;
+    const effectRadius = size * 1.5;
+    
+    // Glow effect
+    if (fish.isEventFish) {
+        // Event fish - golden sparkles
+        ctx.fillStyle = `rgba(255, 215, 0, ${0.5 + Math.sin(time) * 0.3})`;
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2 + time;
+            const sparkleX = Math.cos(angle) * effectRadius;
+            const sparkleY = Math.sin(angle) * effectRadius;
+            ctx.fillRect(Math.floor((x + sparkleX) / px) * px, Math.floor((y + sparkleY) / px) * px, px, px);
+        }
+    } else if (fish.rarity === 'Legendary') {
+        // Legendary - pulsing ring
+        const pulse = 0.5 + Math.sin(time * 2) * 0.3;
+        ctx.fillStyle = `rgba(255, 165, 0, ${pulse})`;
+        const ringRadius = effectRadius * pulse;
+        // Draw ring as pixelated circle
+        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 16) {
+            const ringX = Math.floor((Math.cos(angle) * ringRadius) / px) * px;
+            const ringY = Math.floor((Math.sin(angle) * ringRadius) / px) * px;
+            ctx.fillRect(x + ringX, y + ringY, px, px);
+        }
+    } else if (fish.rarity === 'Mythical') {
+        // Mythical - rainbow particles
+        const colors = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3'];
+        for (let i = 0; i < 12; i++) {
+            const angle = (i / 12) * Math.PI * 2 + time;
+            const particleX = Math.cos(angle) * effectRadius;
+            const particleY = Math.sin(angle) * effectRadius;
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.fillRect(Math.floor((x + particleX) / px) * px, Math.floor((y + particleY) / px) * px, px, px);
+        }
+    }
+}
+
+// Draw fish by type with unique 8-bit designs
+function drawFishByType(x, y, fish, size, px) {
+    const fishName = fish.type.toLowerCase();
+    const bodyColor = fish.color;
+    const darkColor = darkenColor(bodyColor, 0.3);
+    const lightColor = lightenColor(bodyColor, 0.3);
+    
+    // Base fish body pattern (varies by type)
+    if (fishName.includes('glowfin') || fishName.includes('starfish')) {
+        // Glowing fish - bright with sparkles
+        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'glow');
+    } else if (fishName.includes('shadow') || fishName.includes('phantom')) {
+        // Shadow/phantom fish - darker with ethereal look
+        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'shadow');
+    } else if (fishName.includes('fire') || fishName.includes('dragon')) {
+        // Fire/dragon fish - angular and fierce
+        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'fire');
+    } else if (fishName.includes('ice') || fishName.includes('crystal')) {
+        // Ice/crystal fish - sharp and clear
+        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'ice');
+    } else if (fishName.includes('thunder') || fishName.includes('cosmic')) {
+        // Thunder/cosmic fish - electric look
+        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'electric');
+    } else {
+        // Default fish design
+        drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, 'default');
+    }
+}
+
+// Draw pixelated fish body
+function drawPixelFish(x, y, size, px, bodyColor, darkColor, lightColor, style) {
+    const width = Math.floor(size / px);
+    const height = Math.floor((size * 0.6) / px);
+    
+    // Fish body pixels (side view)
+    let bodyPixels;
+    
+    switch(style) {
+        case 'glow':
+            // Glowing fish - rounded with highlights
+            bodyPixels = [
+                [0, 0, 1, 1, 1, 0, 0],
+                [0, 1, 2, 2, 2, 1, 0],
+                [1, 2, 2, 2, 2, 2, 1],
+                [1, 2, 2, 2, 2, 2, 1],
+                [0, 1, 2, 2, 2, 1, 0],
+                [0, 0, 1, 1, 1, 0, 0]
+            ];
+            break;
+        case 'shadow':
+            // Shadow fish - elongated and dark
+            bodyPixels = [
+                [0, 1, 1, 1, 1, 1, 0],
+                [1, 1, 0, 1, 0, 1, 1],
+                [1, 0, 0, 1, 0, 0, 1],
+                [1, 0, 0, 1, 0, 0, 1],
+                [1, 1, 0, 1, 0, 1, 1],
+                [0, 1, 1, 1, 1, 1, 0]
+            ];
+            break;
+        case 'fire':
+            // Fire fish - angular and sharp
+            bodyPixels = [
+                [0, 0, 1, 1, 1, 0],
+                [0, 1, 2, 1, 2, 1],
+                [1, 2, 1, 2, 1, 2],
+                [1, 1, 2, 1, 2, 1],
+                [0, 1, 1, 2, 1, 0],
+                [0, 0, 1, 1, 0, 0]
+            ];
+            break;
+        case 'ice':
+            // Ice fish - sharp and clear
+            bodyPixels = [
+                [0, 1, 1, 1, 1, 0],
+                [1, 2, 1, 1, 2, 1],
+                [1, 1, 2, 2, 1, 1],
+                [1, 1, 2, 2, 1, 1],
+                [1, 2, 1, 1, 2, 1],
+                [0, 1, 1, 1, 1, 0]
+            ];
+            break;
+        case 'electric':
+            // Electric fish - zigzag pattern
+            bodyPixels = [
+                [0, 1, 0, 1, 0, 1, 0],
+                [1, 2, 1, 2, 1, 2, 1],
+                [0, 1, 2, 1, 2, 1, 0],
+                [1, 2, 1, 2, 1, 2, 1],
+                [0, 1, 0, 1, 0, 1, 0]
+            ];
+            break;
+        default:
+            // Default fish - simple rounded
+            bodyPixels = [
+                [0, 0, 1, 1, 1, 0],
+                [0, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1],
+                [0, 1, 1, 1, 1, 1],
+                [0, 0, 1, 1, 1, 0]
+            ];
+    }
+    
+    // Draw body pixels
+    for (let row = 0; row < bodyPixels.length; row++) {
+        for (let col = 0; col < bodyPixels[row].length; col++) {
+            const pixel = bodyPixels[row][col];
+            if (pixel === 0) continue;
+            
+            const pixelX = Math.floor((x + (col - Math.floor(bodyPixels[row].length / 2)) * px) / px) * px;
+            const pixelY = Math.floor((y + (row - Math.floor(bodyPixels.length / 2)) * px) / px) * px;
+            
+            if (pixel === 1) {
+                ctx.fillStyle = bodyColor;
+            } else if (pixel === 2) {
+                ctx.fillStyle = lightColor;
+            } else {
+                ctx.fillStyle = darkColor;
+            }
+            
+            ctx.fillRect(pixelX, pixelY, px, px);
+        }
+    }
+    
+    // Draw tail (varies by style)
+    drawFishTail(x, y, size, px, bodyColor, darkColor, style);
+    
+    // Draw eye
+    const eyeX = Math.floor((x + size * 0.3) / px) * px;
+    const eyeY = Math.floor((y - size * 0.2) / px) * px;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(eyeX, eyeY, px, px);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(eyeX, eyeY, px / 2, px / 2);
+}
+
+// Draw fish tail (8-bit pixelated)
+function drawFishTail(x, y, size, px, bodyColor, darkColor, style) {
+    const tailOffset = Math.floor(size * 0.6 / px) * px;
+    
+    // Tail pixels (varies by style)
+    let tailPixels;
+    
+    if (style === 'fire' || style === 'dragon') {
+        // Sharp angular tail
+        tailPixels = [
+            [1, 0, 0],
+            [1, 1, 0],
+            [0, 1, 1],
+            [0, 0, 1]
+        ];
+    } else if (style === 'ice' || style === 'crystal') {
+        // Pointed tail
+        tailPixels = [
+            [0, 1, 0],
+            [1, 1, 1],
+            [0, 1, 1],
+            [0, 0, 1]
+        ];
+    } else {
+        // Rounded tail
+        tailPixels = [
+            [0, 1, 1],
+            [1, 1, 0],
+            [0, 1, 1]
+        ];
+    }
+    
+    for (let row = 0; row < tailPixels.length; row++) {
+        for (let col = 0; col < tailPixels[row].length; col++) {
+            if (tailPixels[row][col] === 1) {
+                const tailX = Math.floor((x - tailOffset + (col - tailPixels[row].length) * px) / px) * px;
+                const tailY = Math.floor((y + (row - Math.floor(tailPixels.length / 2)) * px) / px) * px;
+                ctx.fillStyle = bodyColor;
+                ctx.fillRect(tailX, tailY, px, px);
+            }
+        }
+    }
+}
+
+// Helper functions for color manipulation
+function darkenColor(color, amount) {
+    const hex = color.replace('#', '');
+    const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - amount * 255);
+    const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - amount * 255);
+    const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - amount * 255);
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+function lightenColor(color, amount) {
+    const hex = color.replace('#', '');
+    const r = Math.min(255, parseInt(hex.substr(0, 2), 16) + amount * 255);
+    const g = Math.min(255, parseInt(hex.substr(2, 2), 16) + amount * 255);
+    const b = Math.min(255, parseInt(hex.substr(4, 2), 16) + amount * 255);
+    return `rgb(${r}, ${g}, ${b})`;
 }
 
 function drawRipples() {
@@ -622,9 +1239,8 @@ function drawRipples() {
         }
     }
     
-    // Update and draw existing ripples
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 1.5;
+    // Update and draw existing ripples in 8-bit pixelated style
+    const ripplePixelSize = 4; // Smaller pixels for ripples
     
     for (let i = waterRipples.length - 1; i >= 0; i--) {
         const ripple = waterRipples[i];
@@ -645,18 +1261,38 @@ function drawRipples() {
         // Calculate opacity (fades out)
         const opacity = ripple.opacity * (1 - progress);
         
-        // Draw ripple
-        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-        ctx.beginPath();
-        ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
-        ctx.stroke();
+        // Draw pixelated ripple (square/octagonal shape instead of smooth circle)
+        const pixelOpacity = Math.floor(opacity * 255);
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
         
-        // Draw inner ring for more detail
-        if (ripple.radius > 5) {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
-            ctx.beginPath();
-            ctx.arc(ripple.x, ripple.y, ripple.radius * 0.6, 0, Math.PI * 2);
-            ctx.stroke();
+        // Draw ripple as pixelated rings
+        const numRings = 3;
+        for (let ring = 0; ring < numRings; ring++) {
+            const ringRadius = ripple.radius * (0.3 + ring * 0.35);
+            const ringOpacity = opacity * (1 - ring * 0.3);
+            
+            if (ringOpacity <= 0) continue;
+            
+            ctx.fillStyle = `rgba(255, 255, 255, ${ringOpacity})`;
+            
+            // Draw pixelated circle (approximate with square pixels)
+            const startX = Math.floor((ripple.x - ringRadius) / ripplePixelSize) * ripplePixelSize;
+            const endX = Math.ceil((ripple.x + ringRadius) / ripplePixelSize) * ripplePixelSize;
+            const startY = Math.floor((ripple.y - ringRadius) / ripplePixelSize) * ripplePixelSize;
+            const endY = Math.ceil((ripple.y + ringRadius) / ripplePixelSize) * ripplePixelSize;
+            
+            for (let px = startX; px <= endX; px += ripplePixelSize) {
+                for (let py = startY; py <= endY; py += ripplePixelSize) {
+                    const dx = px - ripple.x;
+                    const dy = py - ripple.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Draw pixel if within ring radius (with some tolerance for pixelation)
+                    if (Math.abs(dist - ringRadius) < ripplePixelSize * 1.5) {
+                        ctx.fillRect(px, py, ripplePixelSize, ripplePixelSize);
+                    }
+                }
+            }
         }
     }
 }
@@ -943,7 +1579,7 @@ function catchFish() {
     checkLeaderboardUpdate(caughtFish);
     
     updateUI();
-    showFishInfo();
+    showFishInfo(caughtFish);
     updateBackpack();
     
     gameState.currentFish = null;
@@ -951,15 +1587,38 @@ function catchFish() {
     draw();
 }
 
-function showFishInfo() {
+function showFishInfo(fish) {
+    // Use provided fish or fallback to currentFish
+    if (!fish) {
+        fish = gameState.currentFish;
+    }
+    
+    if (!fish) {
+        console.error('No fish provided to showFishInfo');
+        return;
+    }
+    
     const fishInfo = document.getElementById('fish-info');
     const fishDetails = document.getElementById('fish-details');
-    const fish = gameState.currentFish;
+    
+    // Render fish sprite with special effects
+    let fishSprite = '';
+    try {
+        fishSprite = renderFishSprite(fish);
+    } catch (error) {
+        console.error('Error rendering fish sprite:', error);
+        // Continue without sprite if rendering fails
+    }
     
     const eventBadge = fish.isEventFish ? '<div style="color: #f39c12; font-weight: bold; margin-top: 5px;">⭐ Event Fish!</div>' : '';
     
+    const spriteHtml = fishSprite ? `<img src="${fishSprite}" alt="${fish.type}" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; width: 96px; height: 96px; margin-bottom: 10px;" />` : '';
+    
     fishDetails.innerHTML = `
-        <div class="fish-name" style="color: ${fish.rarityColor}">${fish.type}</div>
+        <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 15px;">
+            ${spriteHtml}
+            <div class="fish-name" style="color: ${fish.rarityColor}">${fish.type}</div>
+        </div>
         <div class="fish-attribute">Rarity: <span class="rarity-${fish.rarity.toLowerCase()}">${fish.rarity}</span></div>
         <div class="fish-attribute">Size: ${fish.size}</div>
         <div class="fish-attribute">Value: <span style="color: #f39c12">${fish.value} gold</span></div>
@@ -974,9 +1633,67 @@ function updateUI() {
     document.getElementById('fish-count').textContent = gameState.fishCount;
 }
 
+// Render fish sprite to canvas and return as data URL (includes special effects)
+function renderFishSprite(fish) {
+    if (!fish) {
+        throw new Error('No fish provided to renderFishSprite');
+    }
+    
+    const spriteSize = 64; // Size of sprite canvas
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = spriteSize;
+    tempCanvas.height = spriteSize;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    if (!tempCtx) {
+        throw new Error('Could not get 2d context for sprite rendering');
+    }
+    
+    // Save original context (may be undefined if game not initialized)
+    const originalCtx = typeof ctx !== 'undefined' ? ctx : null;
+    const originalCanvas = typeof canvas !== 'undefined' ? canvas : null;
+    
+    // Temporarily use temp canvas
+    ctx = tempCtx;
+    canvas = tempCanvas;
+    
+    // Clear canvas with transparent background
+    ctx.clearRect(0, 0, spriteSize, spriteSize);
+    
+    // Draw fish centered (without rotation for sprite)
+    const baseSize = 16;
+    const sizeMultiplier = fish.size === 'Tiny' ? 0.7 : fish.size === 'Small' ? 0.85 : fish.size === 'Large' ? 1.3 : fish.size === 'Huge' ? 1.8 : 1.0;
+    const size = Math.floor(baseSize * sizeMultiplier / PIXEL_SIZE) * PIXEL_SIZE;
+    
+    // Draw special effects for event/legendary/mythical fish
+    const isSpecial = fish.isEventFish || fish.rarity === 'Legendary' || fish.rarity === 'Mythical';
+    if (isSpecial) {
+        drawFishSpecialEffects(spriteSize / 2, spriteSize / 2, fish, size, PIXEL_SIZE);
+    }
+    
+    // Draw fish without rotation for sprite
+    ctx.save();
+    drawFishByType(spriteSize / 2, spriteSize / 2, fish, size, PIXEL_SIZE);
+    ctx.restore();
+    
+    // Restore original context (only if it existed)
+    if (originalCtx !== null) {
+        ctx = originalCtx;
+    }
+    if (originalCanvas !== null) {
+        canvas = originalCanvas;
+    }
+    
+    // Return as data URL
+    return tempCanvas.toDataURL();
+}
+
 function updateBackpack() {
     const backpackList = document.getElementById('backpack-list');
     backpackList.innerHTML = '';
+    
+    // Override CSS grid - set to block to allow our custom layout
+    backpackList.style.display = 'block';
     
     // Show all fish
     const allFish = [...gameState.inventory].reverse();
@@ -990,35 +1707,104 @@ function updateBackpack() {
     const mostValuableFish = allFish.reduce((max, fish) => 
         fish.value > max.value ? fish : max, allFish[0]);
     
-    // Display most valuable fish at the top
+    // Create container for layout
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '20px';
+    container.style.alignItems = 'center'; // Center everything
+    container.style.width = '100%';
+    
+    // Display most valuable fish at the top and center
     const mostValuableDiv = document.createElement('div');
-    mostValuableDiv.className = 'most-valuable-fish';
+    mostValuableDiv.style.display = 'flex';
+    mostValuableDiv.style.flexDirection = 'column';
+    mostValuableDiv.style.alignItems = 'center';
+    mostValuableDiv.style.marginBottom = '20px';
+    mostValuableDiv.style.width = '100%';
+    
+    // Render fish sprite
+    const mostValuableSprite = renderFishSprite(mostValuableFish);
+    
     mostValuableDiv.innerHTML = `
-        <div class="most-valuable-header">🏆 Most Valuable Fish</div>
-        <div class="backpack-item most-valuable-item">
-            <div class="backpack-item-name" style="color: ${mostValuableFish.rarityColor}">${mostValuableFish.type}</div>
-            <div class="backpack-item-details">${mostValuableFish.size} ${mostValuableFish.rarity}</div>
-            <div class="backpack-item-value">${mostValuableFish.value}G</div>
+        <div style="color: #f39c12; font-size: 1.2em; margin-bottom: 10px; text-align: center;">🏆 Most Valuable Fish</div>
+        <div class="backpack-item most-valuable-item" style="max-width: 300px; width: 100%; border: 3px solid #f39c12; padding: 15px; display: flex; flex-direction: column; align-items: center;">
+            <img src="${mostValuableSprite}" alt="${mostValuableFish.type}" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; width: 64px; height: 64px; margin-bottom: 10px;" />
+            <div class="backpack-item-name" style="color: ${mostValuableFish.rarityColor}; font-size: 1.1em; text-align: center;">${mostValuableFish.type}</div>
+            <div class="backpack-item-details" style="text-align: center; margin: 5px 0;">${mostValuableFish.size} ${mostValuableFish.rarity}</div>
+            <div class="backpack-item-value" style="text-align: center; font-size: 1.2em; color: #f39c12;">${mostValuableFish.value}G</div>
         </div>
     `;
-    backpackList.appendChild(mostValuableDiv);
+    container.appendChild(mostValuableDiv);
     
     // Add separator
     const separator = document.createElement('div');
-    separator.className = 'backpack-separator';
-    separator.innerHTML = '<div class="separator-text">All Fish</div>';
-    backpackList.appendChild(separator);
+    separator.style.width = '100%';
+    separator.style.height = '2px';
+    separator.style.background = '#34495e';
+    separator.style.margin = '10px 0';
+    container.appendChild(separator);
     
-    allFish.forEach(fish => {
-        const item = document.createElement('div');
-        item.className = 'backpack-item';
-        item.innerHTML = `
-            <div class="backpack-item-name" style="color: ${fish.rarityColor}">${fish.type}</div>
-            <div class="backpack-item-details">${fish.size} ${fish.rarity}</div>
-            <div class="backpack-item-value">${fish.value}G</div>
+    // Create grid for all other fish
+    const allFishContainer = document.createElement('div');
+    allFishContainer.style.display = 'grid';
+    allFishContainer.style.gridTemplateColumns = 'repeat(auto-fit, minmax(180px, 1fr))';
+    allFishContainer.style.gap = '15px';
+    allFishContainer.style.width = '100%';
+    allFishContainer.style.justifyItems = 'stretch'; // Stretch items to fill grid cells
+    
+    // Display all other fish (excluding most valuable)
+    const otherFish = allFish.filter(fish => 
+        !(fish.value === mostValuableFish.value && fish.type === mostValuableFish.type)
+    );
+    
+    // Also include duplicates of most valuable fish
+    const mostValuableCount = allFish.filter(fish => 
+        fish.value === mostValuableFish.value && fish.type === mostValuableFish.type
+    ).length;
+    
+    if (mostValuableCount > 1) {
+        // Add remaining duplicates of most valuable fish
+        for (let i = 1; i < mostValuableCount; i++) {
+            const fishSprite = renderFishSprite(mostValuableFish);
+            const fishDiv = document.createElement('div');
+            fishDiv.className = 'backpack-item';
+            fishDiv.style.display = 'flex';
+            fishDiv.style.flexDirection = 'column';
+            fishDiv.style.alignItems = 'center';
+            fishDiv.style.padding = '10px';
+            fishDiv.style.width = '100%';
+            fishDiv.innerHTML = `
+                <img src="${fishSprite}" alt="${mostValuableFish.type}" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; width: 48px; height: 48px; margin-bottom: 8px;" />
+                <div class="backpack-item-name" style="color: ${mostValuableFish.rarityColor}; text-align: center; font-size: 0.9em;">${mostValuableFish.type}</div>
+                <div class="backpack-item-details" style="text-align: center; font-size: 0.8em; margin: 3px 0;">${mostValuableFish.size} ${mostValuableFish.rarity}</div>
+                <div class="backpack-item-value" style="text-align: center; color: #f39c12; font-size: 0.9em;">${mostValuableFish.value}G</div>
+            `;
+            allFishContainer.appendChild(fishDiv);
+        }
+    }
+    
+    // Add all other fish
+    otherFish.forEach(fish => {
+        const fishSprite = renderFishSprite(fish);
+        const fishDiv = document.createElement('div');
+        fishDiv.className = 'backpack-item';
+        fishDiv.style.display = 'flex';
+        fishDiv.style.flexDirection = 'column';
+        fishDiv.style.alignItems = 'center';
+        fishDiv.style.padding = '10px';
+        fishDiv.style.width = '100%';
+        fishDiv.innerHTML = `
+            <img src="${fishSprite}" alt="${fish.type}" style="image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; width: 48px; height: 48px; margin-bottom: 8px;" />
+            <div class="backpack-item-name" style="color: ${fish.rarityColor}; text-align: center; font-size: 0.9em;">${fish.type}</div>
+            <div class="backpack-item-details" style="text-align: center; font-size: 0.8em; margin: 3px 0;">${fish.size} ${fish.rarity}</div>
+            <div class="backpack-item-value" style="text-align: center; color: #f39c12; font-size: 0.9em;">${fish.value}G</div>
         `;
-        backpackList.appendChild(item);
+        allFishContainer.appendChild(fishDiv);
     });
+    
+    container.appendChild(allFishContainer);
+    backpackList.appendChild(container);
 }
 
 // Authentication and User Management - API-based
@@ -1035,7 +1821,8 @@ async function saveUserData() {
                 gold: gameState.gold,
                 fishCount: gameState.fishCount,
                 inventory: gameState.inventory,
-                settings: gameState.settings
+                settings: gameState.settings,
+                character: gameState.character
             })
         });
         
@@ -1067,6 +1854,22 @@ async function loadUserData(username) {
                     rainEnabled: true,  // defaults
                     grassEnabled: true,
                     ...result.data.settings  // database settings override defaults
+                };
+            }
+            
+            // Load character customization from database
+            if (result.data.character) {
+                gameState.character = {
+                    skinColor: '#ffdbac',
+                    hairColor: '#8b4513',
+                    hairStyle: 'default',
+                    shirtColor: '#4a5568',
+                    pantsColor: '#2c3e50',
+                    hatColor: '#d4af37',
+                    hatStyle: 'cap',
+                    accessoryColor: '#dc2626',
+                    accessoryType: 'scarf',
+                    ...result.data.character  // database character overrides defaults
                 };
             }
             

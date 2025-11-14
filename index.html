@@ -4,27 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>8-Bit Fishing Adventure</title>
+    <link rel="stylesheet" href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="nes-container is-dark">
     <div class="game-container">
         <div class="game-area">
             <canvas id="gameCanvas"></canvas>
             
             <!-- Transparent cast button at top -->
-            <button id="cast-button-top" class="cast-button-top">Cast</button>
+            <button id="cast-button-top" class="cast-button-top nes-btn is-primary">Cast</button>
             
             <!-- Backpack icon -->
-            <button id="backpack-button" class="backpack-button">🎒</button>
+            <button id="backpack-button" class="backpack-button nes-btn">🎒</button>
             
             <!-- Settings button -->
-            <button id="settings-button" class="settings-button">⚙️</button>
+            <button id="settings-button" class="settings-button nes-btn">⚙️</button>
             
             <!-- QTE Overlay -->
             <div id="qte-overlay" class="qte-overlay hidden">
                 <div class="qte-instruction" id="qte-instruction">Press the button!</div>
                 <div class="qte-button-container">
-                    <button id="qte-button" class="qte-button">⚡</button>
+                    <button id="qte-button" class="qte-button nes-btn is-success">⚡</button>
                 </div>
                 <div class="qte-timer">
                     <div id="qte-timer-bar" class="qte-timer-bar"></div>
@@ -33,10 +34,10 @@
             
             <!-- Backpack overlay -->
             <div id="backpack-overlay" class="backpack-overlay hidden">
-                <div class="backpack-content">
+                <div class="backpack-content nes-container is-dark">
                     <div class="backpack-header">
-                        <h2>Your Catch</h2>
-                        <button id="backpack-close" class="backpack-close">×</button>
+                        <h2 class="nes-text is-primary">Your Catch</h2>
+                        <button id="backpack-close" class="backpack-close nes-btn is-error">×</button>
                     </div>
                     <div class="backpack-stats">
                         <div class="stat">
@@ -54,32 +55,32 @@
             
             <!-- Fish caught notification -->
             <div class="fish-info hidden" id="fish-info">
-                <h3>Fish Caught!</h3>
+                <h3 class="nes-text is-success">Fish Caught!</h3>
                 <div id="fish-details"></div>
-                <button id="continue-button" class="action-button">Continue</button>
+                <button id="continue-button" class="action-button nes-btn is-primary">Continue</button>
             </div>
             
             <!-- Login/Register Overlay -->
             <div id="auth-overlay" class="auth-overlay">
-                <div class="auth-content">
-                    <h2>8-Bit Fishing Adventure</h2>
+                <div class="auth-content nes-container is-dark">
+                    <h2 class="nes-text is-primary">8-Bit Fishing Adventure</h2>
                     <div id="auth-forms">
                         <!-- Login Form -->
                         <div id="login-form" class="auth-form">
                             <h3>Login</h3>
-                            <input type="text" id="login-username" placeholder="Username" class="auth-input" />
-                            <input type="password" id="login-password" placeholder="Password" class="auth-input" />
-                            <button id="login-button" class="action-button">Login</button>
+                            <input type="text" id="login-username" placeholder="Username" class="auth-input nes-input" />
+                            <input type="password" id="login-password" placeholder="Password" class="auth-input nes-input" />
+                            <button id="login-button" class="action-button nes-btn is-primary">Login</button>
                             <p class="auth-switch">Don't have an account? <a href="#" id="show-register">Register</a></p>
                         </div>
                         
                         <!-- Register Form -->
                         <div id="register-form" class="auth-form hidden">
                             <h3>Register</h3>
-                            <input type="text" id="register-username" placeholder="Username" class="auth-input" />
-                            <input type="password" id="register-password" placeholder="Password" class="auth-input" />
-                            <input type="password" id="register-password-confirm" placeholder="Confirm Password" class="auth-input" />
-                            <button id="register-button" class="action-button">Register</button>
+                            <input type="text" id="register-username" placeholder="Username" class="auth-input nes-input" />
+                            <input type="password" id="register-password" placeholder="Password" class="auth-input nes-input" />
+                            <input type="password" id="register-password-confirm" placeholder="Confirm Password" class="auth-input nes-input" />
+                            <button id="register-button" class="action-button nes-btn is-primary">Register</button>
                             <p class="auth-switch">Already have an account? <a href="#" id="show-login">Login</a></p>
                         </div>
                     </div>
@@ -89,10 +90,10 @@
             
             <!-- Leaderboard Overlay -->
             <div id="leaderboard-overlay" class="backpack-overlay hidden">
-                <div class="backpack-content">
+                <div class="backpack-content nes-container is-dark">
                     <div class="backpack-header">
-                        <h2>🏆 Leaderboard</h2>
-                        <button id="leaderboard-close" class="backpack-close">×</button>
+                        <h2 class="nes-text is-warning">🏆 Leaderboard</h2>
+                        <button id="leaderboard-close" class="backpack-close nes-btn is-error">×</button>
                     </div>
                     <div id="leaderboard-list" class="leaderboard-list"></div>
                 </div>
@@ -100,10 +101,10 @@
             
             <!-- Settings Overlay -->
             <div id="settings-overlay" class="backpack-overlay hidden">
-                <div class="backpack-content">
+                <div class="backpack-content nes-container is-dark">
                     <div class="backpack-header">
-                        <h2>⚙️ Settings</h2>
-                        <button id="settings-close" class="backpack-close">×</button>
+                        <h2 class="nes-text is-primary">⚙️ Settings</h2>
+                        <button id="settings-close" class="backpack-close nes-btn is-error">×</button>
                     </div>
                     <div class="settings-content">
                         <div class="settings-item">
@@ -129,7 +130,7 @@
                             </div>
                         </div>
                         <div class="settings-item settings-separator">
-                            <button id="logout-button" class="logout-button">Logout</button>
+                            <button id="logout-button" class="logout-button nes-btn is-error">Logout</button>
                         </div>
                     </div>
                 </div>
@@ -137,7 +138,7 @@
         </div>
         
         <!-- Leaderboard button -->
-        <button id="leaderboard-button" class="leaderboard-button">🏆</button>
+        <button id="leaderboard-button" class="leaderboard-button nes-btn">🏆</button>
     </div>
     
     <script src="config.js"></script>

@@ -6,37 +6,72 @@
 
 body {
     font-family: 'Courier New', monospace;
-    background: #1a1a2e;
+    background: #2c3e50;
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 10px;
+    margin: 0;
+    padding: 0;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
     overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* Override NES.css container styles */
+body.nes-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+}
+
+body.nes-container::before,
+body.nes-container::after {
+    display: none !important;
+}
+
+/* Override NES.css button styles that might interfere */
+.nes-btn {
+    margin: 0;
+}
+
+/* Ensure NES containers inside overlays don't add borders */
+.backpack-content.nes-container,
+.auth-content.nes-container {
+    border-width: 4px;
 }
 
 .game-container {
-    width: 100%;
+    width: 100vw;
     height: 100vh;
     max-width: 100%;
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
 }
 
 .game-area {
-    position: relative;
-    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
     height: 100vh;
-    background: #1a1a2e;
+    background: #2c3e50;
     overflow: hidden;
+    margin: 0;
+    padding: 0;
 }
 
 #gameCanvas {
     display: block;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
@@ -356,7 +391,8 @@ body {
     padding: 30px;
     text-align: center;
     z-index: 10;
-    min-width: 300px;
+    min-width: 320px;
+    max-width: 90vw;
 }
 
 .fish-info.hidden {
