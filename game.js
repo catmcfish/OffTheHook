@@ -466,7 +466,7 @@ function drawRipples() {
     const now = Date.now();
     
     // Spawn new ripples randomly (but not too frequently)
-    if (now - lastRippleSpawn > RIPPLE_SPAWN_INTERVAL + Math.random() * 1000) {
+    if (now - lastRippleSpawn > RIPPLE_SPAWN_INTERVAL + Math.random() * 150) {
         // Random chance to spawn (not every interval)
         if (Math.random() < 0.7) {
             spawnRipple();
