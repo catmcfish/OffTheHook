@@ -835,7 +835,7 @@ body.nes-container::after {
         font-size: 1em;
         padding: 8px 20px;
         top: auto;
-        bottom: 20px;
+        bottom: 50px;
         transform: translateX(-50%);
     }
     
