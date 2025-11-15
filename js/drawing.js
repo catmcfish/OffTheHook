@@ -986,6 +986,105 @@ function drawMoon(x, y) {
     }
 }
 
+// Draw seagulls (8-bit pixelated style)
+function drawSeagulls() {
+    if (!canvas) return;
+    
+    if (typeof getSeagulls !== 'function') return;
+    
+    const seagulls = getSeagulls();
+    const px = PIXEL_SIZE;
+    
+    // Get deltaTime from global scope (calculated in rendering.js)
+    const deltaTime = (typeof window !== 'undefined' && window.deltaTime !== undefined) ? window.deltaTime : 1;
+    
+    // Update and draw seagulls
+    for (let i = seagulls.length - 1; i >= 0; i--) {
+        const seagull = seagulls[i];
+        
+        // Update seagull position
+        seagull.x += seagull.speed * seagull.direction * deltaTime;
+        seagull.wingFlap += seagull.wingFlapSpeed * deltaTime;
+        
+        // Remove seagull if it goes off-screen
+        if ((seagull.direction > 0 && seagull.x > canvas.width + 30) ||
+            (seagull.direction < 0 && seagull.x < -30)) {
+            seagulls.splice(i, 1);
+            continue;
+        }
+        
+        // Draw seagull in 8-bit pixelated style
+        // Calculate wing flapping offset (only affects wings, not body/head/tail)
+        // Increased amplitude for more visible flapping, smoother animation
+        const wingFlapOffset = Math.sin(seagull.wingFlap) * 4; // Wing flapping animation (more pronounced)
+        
+        // Seagull body color (white)
+        ctx.fillStyle = '#ffffff';
+        
+        // Draw seagull body - horizontal line (static, doesn't move)
+        const bodyX = Math.floor(seagull.x / px) * px;
+        const bodyY = Math.floor(seagull.y / px) * px;
+        
+        // Body: horizontal line of pixels (4 pixels wide)
+        ctx.fillRect(bodyX, bodyY, px, px); // Left
+        ctx.fillRect(bodyX + px, bodyY, px, px); // Center-left
+        ctx.fillRect(bodyX + px * 2, bodyY, px, px); // Center-right
+        ctx.fillRect(bodyX + px * 3, bodyY, px, px); // Right
+        
+        // Draw tail - single pixel extending from back (static)
+        const tailX = seagull.direction > 0 ? bodyX - px : bodyX + px * 4;
+        ctx.fillRect(tailX, bodyY, px, px);
+        
+        // Draw wings (flapping animation - wings change angle/shape as they flap)
+        // Calculate wing angle based on flapping phase (0 = down, 1 = up)
+        const flapPhase = (Math.sin(seagull.wingFlap) + 1) / 2; // Normalize to 0-1 (0 = down, 1 = up)
+        const wingAngle = flapPhase * Math.PI / 3; // Angle from 0 (down) to 60 degrees (up)
+        
+        // Base wing position (at body level)
+        const baseWingY = bodyY + px;
+        
+        // Left wing - animate angle based on flapping
+        // When flapping up (flapPhase near 1), wings angle upward more
+        // When flapping down (flapPhase near 0), wings angle downward/flat
+        const leftWingBaseY = baseWingY - Math.sin(wingAngle) * px * 2;
+        const leftWingTipY = leftWingBaseY - Math.sin(wingAngle) * px * 1.5;
+        
+        // Left wing pixels (connected to body, then angled outward)
+        ctx.fillRect(bodyX, Math.floor(leftWingBaseY / px) * px, px, px); // Connected to body
+        ctx.fillRect(bodyX - px, Math.floor(leftWingTipY / px) * px, px, px); // Angled out
+        ctx.fillRect(bodyX - px * 2, Math.floor(leftWingTipY / px) * px, px, px); // Further out
+        
+        // Right wing - animate angle based on flapping
+        const rightWingBaseY = baseWingY - Math.sin(wingAngle) * px * 2;
+        const rightWingTipY = rightWingBaseY - Math.sin(wingAngle) * px * 1.5;
+        
+        // Right wing pixels (connected to body, then angled outward)
+        ctx.fillRect(bodyX + px * 3, Math.floor(rightWingBaseY / px) * px, px, px); // Connected to body
+        ctx.fillRect(bodyX + px * 4, Math.floor(rightWingTipY / px) * px, px, px); // Angled out
+        ctx.fillRect(bodyX + px * 5, Math.floor(rightWingTipY / px) * px, px, px); // Further out
+        
+        // Draw head - single pixel extending from front (static)
+        const headX = seagull.direction > 0 ? bodyX + px * 4 : bodyX - px;
+        ctx.fillRect(headX, bodyY, px, px);
+        
+        // Draw beak - yellow pixel at front of head (static)
+        const beakX = seagull.direction > 0 ? headX + px : headX - px;
+        ctx.fillStyle = '#ffd700'; // Yellow beak
+        ctx.fillRect(beakX, bodyY, px, px);
+        
+        // Draw eye - black pixel above beak (static)
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(beakX, bodyY - px, px, px);
+        
+        // Draw small yellow feet (static, below body)
+        ctx.fillStyle = '#ffd700'; // Yellow feet
+        const leftFootX = bodyX + px;
+        const rightFootX = bodyX + px * 2;
+        ctx.fillRect(leftFootX, bodyY + px, px, px);
+        ctx.fillRect(rightFootX, bodyY + px, px, px);
+    }
+}
+
 // Draw water ripples (uses environment module)
 function drawRipples() {
     if (!canvas) return;
@@ -1276,6 +1375,7 @@ if (typeof window !== 'undefined') {
     window.drawFishTail = drawFishTail;
     window.drawRipples = drawRipples;
     window.drawClouds = drawClouds;
+    window.drawSeagulls = drawSeagulls;
     window.drawSun = drawSun;
     window.drawMoon = drawMoon;
     window.renderFishSprite = renderFishSprite;

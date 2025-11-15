@@ -37,6 +37,45 @@ function getClouds() {
     return clouds;
 }
 
+// Seagull system
+let seagulls = [];
+let lastSeagullSpawn = 0;
+const SEAGULL_SPAWN_INTERVAL = 5000; // Spawn a seagull every 5-15 seconds
+const SEAGULL_MIN_SPAWN_INTERVAL = 5000; // Minimum 5 seconds between spawns
+const SEAGULL_MAX_SPAWN_INTERVAL = 15000; // Maximum 15 seconds between spawns
+
+function spawnSeagull(canvas) {
+    if (!canvas) return;
+    
+    // Randomly choose direction (left to right or right to left)
+    const direction = Math.random() > 0.5 ? 1 : -1; // 1 = left to right, -1 = right to left
+    
+    // Spawn off-screen on the appropriate side
+    const startX = direction > 0 ? -30 : canvas.width + 30;
+    const y = canvas.height * 0.15 + Math.random() * (canvas.height * 0.25); // Upper portion of sky
+    
+    seagulls.push({
+        x: startX,
+        y: y,
+        speed: 1.5 + Math.random() * 1.0, // Horizontal speed
+        direction: direction, // 1 = right, -1 = left
+        wingFlap: Math.random() * Math.PI * 2, // Random starting wing flap phase
+        wingFlapSpeed: 0.4 + Math.random() * 0.2 // Wing flapping speed (smoother, slightly faster)
+    });
+}
+
+function getSeagulls() {
+    return seagulls;
+}
+
+function getLastSeagullSpawn() {
+    return lastSeagullSpawn;
+}
+
+function setLastSeagullSpawn(time) {
+    lastSeagullSpawn = time;
+}
+
 // Water ripples system
 let waterRipples = [];
 let lastRippleSpawn = 0;
@@ -107,6 +146,13 @@ if (typeof module !== 'undefined' && module.exports) {
         setLastFrameTime,
         initClouds,
         getClouds,
+        spawnSeagull,
+        getSeagulls,
+        getLastSeagullSpawn,
+        setLastSeagullSpawn,
+        SEAGULL_SPAWN_INTERVAL,
+        SEAGULL_MIN_SPAWN_INTERVAL,
+        SEAGULL_MAX_SPAWN_INTERVAL,
         RIPPLE_SPAWN_INTERVAL,
         RIPPLE_LIFETIME
     };
@@ -125,5 +171,9 @@ if (typeof window !== 'undefined') {
     window.setLastFrameTime = setLastFrameTime;
     window.initClouds = initClouds;
     window.getClouds = getClouds;
+    window.spawnSeagull = spawnSeagull;
+    window.getSeagulls = getSeagulls;
+    window.getLastSeagullSpawn = getLastSeagullSpawn;
+    window.setLastSeagullSpawn = setLastSeagullSpawn;
 }
 

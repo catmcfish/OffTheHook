@@ -156,6 +156,33 @@ function draw() {
         drawClouds();
     }
     
+    // Spawn and draw seagulls (occasionally)
+    if (typeof getSeagulls === 'function' && typeof getLastSeagullSpawn === 'function' && 
+        typeof setLastSeagullSpawn === 'function' && typeof spawnSeagull === 'function') {
+        
+        const lastSeagullSpawn = getLastSeagullSpawn();
+        const SEAGULL_MIN_SPAWN_INTERVAL = 5000;
+        const SEAGULL_MAX_SPAWN_INTERVAL = 15000;
+        
+        // Spawn seagull occasionally (every 5-15 seconds)
+        if (!lastSeagullSpawn || lastSeagullSpawn === 0) {
+            setLastSeagullSpawn(now);
+        } else {
+            const timeSinceLastSpawn = now - lastSeagullSpawn;
+            const spawnInterval = SEAGULL_MIN_SPAWN_INTERVAL + Math.random() * (SEAGULL_MAX_SPAWN_INTERVAL - SEAGULL_MIN_SPAWN_INTERVAL);
+            
+            if (timeSinceLastSpawn > spawnInterval) {
+                spawnSeagull(canvas);
+                setLastSeagullSpawn(now);
+            }
+        }
+        
+        // Draw seagulls
+        if (typeof drawSeagulls === 'function') {
+            drawSeagulls();
+        }
+    }
+    
     if (PERFORMANCE_PROFILING) {
         performanceStats.skyTime += performance.now() - sectionStart;
         sectionStart = performance.now();
