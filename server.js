@@ -40,8 +40,7 @@ const authRoutes = require('./server/routes/auth');
 const userDataRoutes = require('./server/routes/userData');
 const leaderboardRoutes = require('./server/routes/leaderboard');
 
-expressApp.use('/api/register', authRoutes);
-expressApp.use('/api/login', authRoutes);
+expressApp.use('/api', authRoutes);
 expressApp.use('/api/user-data', userDataRoutes);
 expressApp.use('/api/leaderboard', leaderboardRoutes);
 
