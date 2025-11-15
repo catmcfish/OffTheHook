@@ -960,9 +960,34 @@ body.nes-container::after {
     text-align: center;
 }
 
+.leaderboard-fish-sprite-container {
+    min-width: 64px;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    flex-shrink: 0;
+    background: rgba(0, 0, 0, 0.2);
+    border: 2px solid #2c3e50;
+    border-radius: 4px;
+    padding: 4px;
+    box-sizing: border-box;
+}
+
+.leaderboard-fish-sprite {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
 .leaderboard-user-info {
     flex: 1;
-    margin-left: 15px;
+    margin-left: 0;
     min-width: 0; /* Allow flex item to shrink */
     overflow: hidden; /* Prevent overflow */
 }
@@ -1202,6 +1227,28 @@ body.nes-container::after {
     
     .shop-items {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+    
+    .leaderboard-fish-sprite-container {
+        min-width: 48px;
+        width: 48px;
+        height: 48px;
+        margin-right: 10px;
+    }
+    
+    .leaderboard-item {
+        padding: 10px;
+        font-size: 0.9em;
+    }
+    
+    .leaderboard-rank {
+        min-width: 35px;
+        font-size: 1.2em;
+    }
+    
+    .leaderboard-value {
+        min-width: 70px;
+        font-size: 1.1em;
     }
 }
 

@@ -302,5 +302,6 @@ if (typeof module !== 'undefined' && module.exports) {
 // Export to global scope for browser
 if (typeof window !== 'undefined') {
     window.generateFish = generateFish;
+    window.fishTypes = fishTypes; // Export for use in leaderboard fish reconstruction
 }
 

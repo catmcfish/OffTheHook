@@ -410,6 +410,32 @@ async function checkLeaderboardUpdate(fish) {
     }
 }
 
+// Helper function to reconstruct fish object from leaderboard entry
+function reconstructFishFromEntry(entry) {
+    // Find fish type data from fishTypes
+    let fishTypeData = null;
+    if (typeof fishTypes !== 'undefined') {
+        const rarityTypes = fishTypes[entry.fishRarity];
+        if (rarityTypes) {
+            fishTypeData = rarityTypes.find(f => f.name === entry.fishName);
+        }
+    }
+    
+    // Reconstruct fish object with properties needed for rendering
+    const fish = {
+        type: entry.fishName,
+        rarity: entry.fishRarity,
+        size: entry.fishSize,
+        value: entry.fishValue,
+        color: fishTypeData ? fishTypeData.color : entry.fishRarityColor || '#ffffff',
+        designStyle: fishTypeData ? fishTypeData.designStyle : 'default',
+        isEventFish: false, // Leaderboard doesn't store this, but special effects still work for Legendary/Mythical/Universal
+        rarityColor: entry.fishRarityColor
+    };
+    
+    return fish;
+}
+
 async function displayLeaderboard() {
     const leaderboardList = document.getElementById('leaderboard-list');
     leaderboardList.innerHTML = '<div style="text-align: center; color: #95a5a6; padding: 20px;">Loading...</div>';
@@ -438,14 +464,37 @@ async function displayLeaderboard() {
             return;
         }
         
-        result.leaderboard.forEach((entry, index) => {
+        // Process each entry and render fish sprites
+        for (let index = 0; index < result.leaderboard.length; index++) {
+            const entry = result.leaderboard[index];
             const item = document.createElement('div');
             item.className = `leaderboard-item rank-${index + 1}`;
             
             const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
             
+            // Reconstruct fish object for rendering
+            const fish = reconstructFishFromEntry(entry);
+            
+            // Render fish sprite (with special effects)
+            let fishSpriteUrl = '';
+            try {
+                if (typeof renderFishSprite === 'function') {
+                    fishSpriteUrl = renderFishSprite(fish);
+                }
+            } catch (error) {
+                console.error('Error rendering fish sprite:', error);
+            }
+            
+            // Create fish sprite image element
+            const fishSpriteHtml = fishSpriteUrl 
+                ? `<img src="${fishSpriteUrl}" alt="${entry.fishName}" class="leaderboard-fish-sprite" />`
+                : '';
+            
             item.innerHTML = `
                 <div class="leaderboard-rank">${rankEmoji || (index + 1)}</div>
+                <div class="leaderboard-fish-sprite-container">
+                    ${fishSpriteHtml}
+                </div>
                 <div class="leaderboard-user-info">
                     <div class="leaderboard-username">${entry.username}</div>
                     <div class="leaderboard-fish-info">
@@ -456,7 +505,7 @@ async function displayLeaderboard() {
                 <div class="leaderboard-value">${entry.fishValue}G</div>
             `;
             leaderboardList.appendChild(item);
-        });
+        }
     } catch (error) {
         console.error('Error loading leaderboard:', error);
         leaderboardList.innerHTML = '<div style="text-align: center; color: #e74c3c; padding: 20px;">Error loading leaderboard</div>';
