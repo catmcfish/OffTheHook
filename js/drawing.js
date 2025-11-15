@@ -9,35 +9,6 @@ const PIXEL_SIZE = 4; // Size of each pixel for 8-bit look
 // CHARACTER DRAWING FUNCTIONS
 // ============================================================================
 
-// Draw character head (8-bit pixelated)
-function drawCharacterHead(x, y, facingRight, skinColor) {
-    const direction = facingRight ? 1 : -1;
-    const px = PIXEL_SIZE;
-    
-    // Head shape (side view, pixelated)
-    ctx.fillStyle = skinColor;
-    // Head pixels - creating a rounded head shape
-    const headPixels = [
-        [0, 0, 1, 1, 1, 0],
-        [0, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1],
-        [0, 1, 1, 1, 1, 1],
-        [0, 0, 1, 1, 1, 0]
-    ];
-    
-    for (let row = 0; row < headPixels.length; row++) {
-        for (let col = 0; col < headPixels[row].length; col++) {
-            if (headPixels[row][col] === 1) {
-                ctx.fillRect(x + (col - 3) * px * direction, y - 24 + row * px, px, px);
-            }
-        }
-    }
-    
-    // Eye (side view, facing direction)
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(x + (direction * 2 * px), y - 20, px, px);
-}
 
 // Draw character hair (8-bit pixelated)
 function drawCharacterHair(x, y, facingRight, hairColor, hairStyle) {
@@ -276,6 +247,9 @@ function drawCharacter(x, y, facingRight = false) {
     // Draw character parts in order (back to front)
     // 1. Back arm (drawn first so it's behind everything)
     drawCharacterBackArm(x, y, facingRight, char.skinColor);
+
+    // Front arm (drawn after body so it's in front)
+    drawCharacterFrontArm(x, y, facingRight, char.skinColor);
     
     // 2. Accessory cape (drawn before body so it's behind, but after back arm)
     // Only draw cape here; scarf will be drawn later
@@ -292,16 +266,10 @@ function drawCharacter(x, y, facingRight = false) {
     // 5. Pants
     drawCharacterPants(x, y, facingRight, char.pantsColor);
     
-    // 6. Front arm (drawn after body so it's in front)
-    drawCharacterFrontArm(x, y, facingRight, char.skinColor);
-    
     // 7. Accessory scarf (drawn after body so it's visible in front)
     if (char.accessoryType === 'scarf') {
         drawCharacterAccessory(x, y, facingRight, char.accessoryColor, char.accessoryType);
     }
-    
-    // 8. Head
-    drawCharacterHead(x, y, facingRight, char.skinColor);
     
     // 9. Hair (drawn after head but before hat)
     drawCharacterHair(x, y, facingRight, char.hairColor, char.hairStyle);
