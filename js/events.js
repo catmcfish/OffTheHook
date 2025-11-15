@@ -65,8 +65,9 @@ function getCurrentEvent() {
 // Sun/Moon position calculation
 // Sunrise at 8am (hour 8), Sunset at 10pm (hour 22)
 // Day length: 14 hours (8am to 10pm)
-function getSunMoonPosition(canvasWidth, canvasHeight) {
-    const now = new Date();
+function getSunMoonPosition(canvasWidth, canvasHeight, currentTime) {
+    // Use provided time or current time (for backwards compatibility)
+    const now = currentTime ? new Date(currentTime) : new Date();
     const hour = now.getHours();
     const minute = now.getMinutes();
     const totalMinutes = hour * 60 + minute;
@@ -138,8 +139,9 @@ function getSunMoonPosition(canvasWidth, canvasHeight) {
 }
 
 // Calculate gradual sky colors based on exact time
-function getSkyColors() {
-    const now = new Date();
+function getSkyColors(currentTime) {
+    // Use provided time or current time (for backwards compatibility)
+    const now = currentTime ? new Date(currentTime) : new Date();
     const hour = now.getHours();
     const minute = now.getMinutes();
     const totalMinutes = hour * 60 + minute;

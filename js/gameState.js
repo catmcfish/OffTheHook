@@ -31,7 +31,8 @@ const gameState = {
     currentUser: null,
     settings: {
         rainEnabled: true,
-        grassEnabled: true
+        grassEnabled: true,
+        framerate: 'uncapped' // Default framerate ('uncapped' or 30 for low power mode)
     },
     character: {
         // Character customization - modular parts

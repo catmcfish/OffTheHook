@@ -70,7 +70,11 @@ function draw() {
     // Calculate deltaTime early for use in animations (clouds, rain, etc.)
     const now = Date.now();
     let lastFrameTime = typeof getLastFrameTime === 'function' ? getLastFrameTime() : now;
-    let deltaTime = (now - lastFrameTime) / 16.67; // Normalize to 60fps
+    // Calculate actual time elapsed in milliseconds
+    const actualDeltaTime = now - lastFrameTime;
+    // Normalize deltaTime to 60fps (16.67ms) for consistent movement speed regardless of framerate cap
+    // This ensures animations move at the same speed whether capped at 30fps or 60fps
+    let deltaTime = actualDeltaTime / 16.67; // Normalize to 60fps baseline
     
     // Handle large time gaps (e.g., tab was in background)
     if (deltaTime > 100) {
@@ -99,9 +103,10 @@ function draw() {
     const skyHeight = canvas.height * 0.6;
     
     // Get gradual sky colors based on exact time (not just timeOfDay phase)
+    // Pass current time to avoid creating new Date object
     let topColor, bottomColor;
     if (typeof getSkyColors === 'function') {
-        const skyColors = getSkyColors();
+        const skyColors = getSkyColors(now);
         topColor = skyColors.topColor;
         bottomColor = skyColors.bottomColor;
     } else {
@@ -138,8 +143,9 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, skyHeight);
     
     // Draw sun or moon based on time
+    // Pass current time to avoid creating new Date object each frame
     if (typeof getSunMoonPosition === 'function') {
-        const sunMoonPos = getSunMoonPosition(canvas.width, canvas.height);
+        const sunMoonPos = getSunMoonPosition(canvas.width, canvas.height, now);
         if (sunMoonPos.isDaytime && sunMoonPos.sunX !== null && sunMoonPos.sunY !== null) {
             if (typeof drawSun === 'function') {
                 drawSun(sunMoonPos.sunX, sunMoonPos.sunY);
@@ -151,15 +157,31 @@ function draw() {
         }
     }
     
-    // Draw clouds (after sky but before other elements)
-    if (typeof drawClouds === 'function') {
-        drawClouds();
+    // ========================================================================
+    // UPDATE CONTINUOUS ANIMATIONS: Clouds and Seagulls
+    // Following unified time-based animation system pattern
+    // ========================================================================
+    
+    // Update cloud positions (state updates in draw(), not in drawing functions)
+    if (typeof getClouds === 'function') {
+        const clouds = getClouds();
+        clouds.forEach(cloud => {
+            // Update cloud position using deltaTime for smooth movement
+            cloud.x += cloud.speed * deltaTime;
+            
+            // Reset cloud position if it goes off-screen
+            if (cloud.x > canvas.width + cloud.size) {
+                cloud.x = -cloud.size;
+                cloud.y = Math.random() * (canvas.height * 0.3) + canvas.height * 0.05;
+            }
+        });
     }
     
-    // Spawn and draw seagulls (occasionally)
+    // Spawn and update seagulls (state updates in draw(), not in drawing functions)
     if (typeof getSeagulls === 'function' && typeof getLastSeagullSpawn === 'function' && 
         typeof setLastSeagullSpawn === 'function' && typeof spawnSeagull === 'function') {
         
+        const seagulls = getSeagulls();
         const lastSeagullSpawn = getLastSeagullSpawn();
         const SEAGULL_MIN_SPAWN_INTERVAL = 5000;
         const SEAGULL_MAX_SPAWN_INTERVAL = 15000;
@@ -177,10 +199,30 @@ function draw() {
             }
         }
         
-        // Draw seagulls
-        if (typeof drawSeagulls === 'function') {
-            drawSeagulls();
+        // Update seagull positions and animations (state updates in draw())
+        for (let i = seagulls.length - 1; i >= 0; i--) {
+            const seagull = seagulls[i];
+            
+            // Update seagull position using deltaTime
+            seagull.x += seagull.speed * seagull.direction * deltaTime;
+            seagull.wingFlap += seagull.wingFlapSpeed * deltaTime;
+            
+            // Remove seagull if it goes off-screen
+            if ((seagull.direction > 0 && seagull.x > canvas.width + 30) ||
+                (seagull.direction < 0 && seagull.x < -30)) {
+                seagulls.splice(i, 1);
+            }
         }
+    }
+    
+    // Draw clouds (after sky but before other elements) - pure drawing function
+    if (typeof drawClouds === 'function') {
+        drawClouds();
+    }
+    
+    // Draw seagulls - pure drawing function
+    if (typeof drawSeagulls === 'function') {
+        drawSeagulls();
     }
     
     if (PERFORMANCE_PROFILING) {

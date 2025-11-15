@@ -814,6 +814,7 @@ function drawFishTail(x, y, size, px, bodyColor, darkColor, style) {
 // ============================================================================
 
 // Draw clouds (8-bit pixelated style)
+// Pure drawing function - no state updates (state updates happen in rendering.js draw())
 function drawClouds() {
     if (!canvas) return;
     
@@ -822,20 +823,8 @@ function drawClouds() {
     const clouds = getClouds();
     const px = PIXEL_SIZE;
     
-    // Get deltaTime from global scope (calculated in rendering.js)
-    const deltaTime = (typeof window !== 'undefined' && window.deltaTime !== undefined) ? window.deltaTime : 1;
-    
     clouds.forEach(cloud => {
-        // Update cloud position using deltaTime for smooth movement
-        cloud.x += cloud.speed * deltaTime;
-        
-        // Reset cloud position if it goes off-screen
-        if (cloud.x > canvas.width + cloud.size) {
-            cloud.x = -cloud.size;
-            cloud.y = Math.random() * (canvas.height * 0.3) + canvas.height * 0.05;
-        }
-        
-        // Draw cloud in 8-bit pixelated style
+        // Draw cloud in 8-bit pixelated style (pure drawing, no state updates)
         ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`;
         
         // Draw cloud as multiple overlapping circles (pixelated)
@@ -987,6 +976,7 @@ function drawMoon(x, y) {
 }
 
 // Draw seagulls (8-bit pixelated style)
+// Pure drawing function - no state updates (state updates happen in rendering.js draw())
 function drawSeagulls() {
     if (!canvas) return;
     
@@ -995,24 +985,8 @@ function drawSeagulls() {
     const seagulls = getSeagulls();
     const px = PIXEL_SIZE;
     
-    // Get deltaTime from global scope (calculated in rendering.js)
-    const deltaTime = (typeof window !== 'undefined' && window.deltaTime !== undefined) ? window.deltaTime : 1;
-    
-    // Update and draw seagulls
-    for (let i = seagulls.length - 1; i >= 0; i--) {
-        const seagull = seagulls[i];
-        
-        // Update seagull position
-        seagull.x += seagull.speed * seagull.direction * deltaTime;
-        seagull.wingFlap += seagull.wingFlapSpeed * deltaTime;
-        
-        // Remove seagull if it goes off-screen
-        if ((seagull.direction > 0 && seagull.x > canvas.width + 30) ||
-            (seagull.direction < 0 && seagull.x < -30)) {
-            seagulls.splice(i, 1);
-            continue;
-        }
-        
+    // Draw seagulls (pure drawing, no state updates)
+    seagulls.forEach(seagull => {
         // Draw seagull in 8-bit pixelated style
         // Calculate wing flapping offset (only affects wings, not body/head/tail)
         // Increased amplitude for more visible flapping, smoother animation
@@ -1082,7 +1056,7 @@ function drawSeagulls() {
         const rightFootX = bodyX + px * 2;
         ctx.fillRect(leftFootX, bodyY + px, px, px);
         ctx.fillRect(rightFootX, bodyY + px, px, px);
-    }
+    });
 }
 
 // Draw water ripples (uses environment module)

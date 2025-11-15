@@ -385,6 +385,7 @@ function initGame() {
     const settingsClose = document.getElementById('settings-close');
     const rainToggle = document.getElementById('setting-rain');
     const grassToggle = document.getElementById('setting-grass');
+    const lowPowerToggle = document.getElementById('setting-low-power');
     const logoutButton = document.getElementById('logout-button');
     
     settingsButton?.addEventListener('click', () => {
@@ -411,6 +412,15 @@ function initGame() {
     
     grassToggle?.addEventListener('change', (e) => {
         gameState.settings.grassEnabled = e.target.checked;
+        if (typeof saveSettings === 'function') {
+            saveSettings();
+        }
+    });
+    
+    lowPowerToggle?.addEventListener('change', (e) => {
+        // When toggle is ON (checked), use 30 FPS (low power mode)
+        // When toggle is OFF (unchecked), use 'uncapped'
+        gameState.settings.framerate = e.target.checked ? 30 : 'uncapped';
         if (typeof saveSettings === 'function') {
             saveSettings();
         }
@@ -512,11 +522,30 @@ function initGame() {
         draw();
     }
 
-    // Animation loop - runs continuously for struggling fish animation
-    function gameLoop() {
-        if (typeof draw === 'function') {
-            draw();
+    // Animation loop - runs continuously with optional framerate cap
+    let lastFrameTime = performance.now();
+    function gameLoop(currentTime) {
+        const framerateSetting = gameState.settings.framerate || 30;
+        
+        if (framerateSetting === 'uncapped') {
+            // Uncapped mode: draw every frame
+            lastFrameTime = currentTime; // Update for smooth transition if switching back to capped
+            if (typeof draw === 'function') {
+                draw();
+            }
+        } else {
+            // Framerate capping: only draw if enough time has passed
+            const targetFPS = typeof framerateSetting === 'number' ? framerateSetting : 30;
+            const frameInterval = 1000 / targetFPS; // milliseconds per frame
+            
+            if (currentTime - lastFrameTime >= frameInterval) {
+                lastFrameTime = currentTime;
+                if (typeof draw === 'function') {
+                    draw();
+                }
+            }
         }
+        
         requestAnimationFrame(gameLoop);
     }
     requestAnimationFrame(gameLoop);

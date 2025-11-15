@@ -387,12 +387,19 @@ function saveSettings() {
 function updateSettingsUI() {
     const rainToggle = document.getElementById('setting-rain');
     const grassToggle = document.getElementById('setting-grass');
+    const lowPowerToggle = document.getElementById('setting-low-power');
     
     if (rainToggle) {
         rainToggle.checked = gameState.settings.rainEnabled;
     }
     if (grassToggle) {
         grassToggle.checked = gameState.settings.grassEnabled;
+    }
+    if (lowPowerToggle) {
+        // Toggle is ON when framerate is 30 (low power mode)
+        // Toggle is OFF when framerate is 'uncapped'
+        const framerate = gameState.settings.framerate || 'uncapped';
+        lowPowerToggle.checked = framerate === 30;
     }
     
     // Always update admin panel visibility
