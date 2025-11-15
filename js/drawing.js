@@ -279,7 +279,12 @@ function drawCharacter(x, y, facingRight = false) {
     
     // 11. Fishing rod (when fishing) - 8-bit pixelated rod, pointing forward
     if (gameState.isCasting || gameState.isReeling) {
-        drawFishingRod(x, y, facingRight);
+        const rodTip = drawFishingRod(x, y, facingRight);
+        // Store rod tip position for line attachment
+        if (rodTip) {
+            gameState.rodTipX = rodTip.x;
+            gameState.rodTipY = rodTip.y;
+        }
     }
 }
 
@@ -287,7 +292,8 @@ function drawCharacter(x, y, facingRight = false) {
 // FISHING EQUIPMENT DRAWING FUNCTIONS
 // ============================================================================
 
-// Draw 8-bit pixelated fishing rod
+// Draw 8-bit pixelated fishing rod with arc at the end
+// Returns the rod tip position {x, y} for line attachment
 function drawFishingRod(x, y, facingRight) {
     const direction = facingRight ? 1 : -1;
     const px = PIXEL_SIZE;
@@ -305,20 +311,53 @@ function drawFishingRod(x, y, facingRight) {
     
     ctx.fillStyle = rodColor;
     
-    // Rod pixels - diagonal line from character's hand
+    // Rod start position - from character's hand
     const rodStartX = x + (direction * 2 * px);
     const rodStartY = y - 14;
-    const rodEndX = x + (direction * 6 * px);
-    const rodEndY = y - 20;
     
-    // Draw rod as pixelated line
-    const steps = 8;
-    for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const rodX = Math.floor((rodStartX + (rodEndX - rodStartX) * t) / px) * px;
-        const rodY = Math.floor((rodStartY + (rodEndY - rodStartY) * t) / px) * px;
+    // Rod is longer now - extends further forward
+    const rodLength = 14 * px; // Longer rod (was 4 * px)
+    const rodBaseEndX = rodStartX + (direction * rodLength * 0.7); // Base of rod (straight section)
+    const rodBaseEndY = rodStartY - (px * 2); // Slightly upward angle
+    
+    // Arc/bend at the end - creates signature fishing rod curve
+    const arcControlX = rodBaseEndX + (direction * rodLength * 0.15); // Control point for arc
+    const arcControlY = rodBaseEndY - (px * 3); // Curves upward
+    const rodTipX = rodBaseEndX + (direction * rodLength * 0.3); // Final tip position
+    const rodTipY = rodBaseEndY - (px * 1); // Tip is slightly lower than control point
+    
+    // Draw straight section of rod (from hand to base of arc)
+    const straightSteps = 12;
+    for (let i = 0; i <= straightSteps; i++) {
+        const t = i / straightSteps;
+        const rodX = Math.floor((rodStartX + (rodBaseEndX - rodStartX) * t) / px) * px;
+        const rodY = Math.floor((rodStartY + (rodBaseEndY - rodStartY) * t) / px) * px;
         ctx.fillRect(rodX, rodY, px, px);
     }
+    
+    // Draw curved section (arc) at the end using quadratic curve approximation
+    const arcSteps = 8;
+    for (let i = 0; i <= arcSteps; i++) {
+        const t = i / arcSteps;
+        // Quadratic Bezier curve: (1-t)²P₀ + 2(1-t)tP₁ + t²P₂
+        const rodX = Math.floor((
+            (1 - t) * (1 - t) * rodBaseEndX + 
+            2 * (1 - t) * t * arcControlX + 
+            t * t * rodTipX
+        ) / px) * px;
+        const rodY = Math.floor((
+            (1 - t) * (1 - t) * rodBaseEndY + 
+            2 * (1 - t) * t * arcControlY + 
+            t * t * rodTipY
+        ) / px) * px;
+        ctx.fillRect(rodX, rodY, px, px);
+    }
+    
+    // Return rod tip position for line attachment
+    return {
+        x: rodTipX,
+        y: rodTipY
+    };
 }
 
 // Draw 8-bit pixelated fishing line

@@ -384,8 +384,9 @@ function draw() {
     
     // Draw fishing line - casting forward/right from beach into water (side view)
     if (gameState.isCasting || gameState.isReeling) {
-        const lineStartX = charX + 8;
-        const lineStartY = charY - 15;
+        // Use rod tip position if available (from drawFishingRod), otherwise fallback to character position
+        const lineStartX = gameState.rodTipX !== undefined ? gameState.rodTipX : charX + 8;
+        const lineStartY = gameState.rodTipY !== undefined ? gameState.rodTipY : charY - 15;
         
         let lineEndX, lineEndY;
         
