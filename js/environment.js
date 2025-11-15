@@ -1,4 +1,4 @@
-// Environment effects: rain, ripples, etc.
+// Environment effects: rain, ripples, clouds, etc.
 
 // Rain particles
 let rainParticles = [];
@@ -14,6 +14,27 @@ function initRainParticles(canvas) {
         });
     }
     lastFrameTime = Date.now();
+}
+
+// Cloud particles
+let clouds = [];
+
+function initClouds(canvas) {
+    clouds = [];
+    const numClouds = 5 + Math.floor(Math.random() * 5); // 5-9 clouds
+    for (let i = 0; i < numClouds; i++) {
+        clouds.push({
+            x: Math.random() * canvas.width * 1.5 - canvas.width * 0.5, // Start off-screen or on-screen
+            y: Math.random() * (canvas.height * 0.3) + canvas.height * 0.05, // Upper portion of sky
+            speed: 0.2 + Math.random() * 0.3, // Slow horizontal movement
+            size: 40 + Math.random() * 60, // Cloud size in pixels
+            opacity: 0.6 + Math.random() * 0.3 // Varying opacity
+        });
+    }
+}
+
+function getClouds() {
+    return clouds;
 }
 
 // Water ripples system
@@ -84,6 +105,8 @@ if (typeof module !== 'undefined' && module.exports) {
         setLastRippleSpawn,
         getLastFrameTime,
         setLastFrameTime,
+        initClouds,
+        getClouds,
         RIPPLE_SPAWN_INTERVAL,
         RIPPLE_LIFETIME
     };
@@ -100,5 +123,7 @@ if (typeof window !== 'undefined') {
     window.setLastRippleSpawn = setLastRippleSpawn;
     window.getLastFrameTime = getLastFrameTime;
     window.setLastFrameTime = setLastFrameTime;
+    window.initClouds = initClouds;
+    window.getClouds = getClouds;
 }
 

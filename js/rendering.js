@@ -30,6 +30,11 @@ function resizeCanvas() {
         initRainParticles(canvas);
     }
     
+    // Initialize clouds if environment module is available
+    if (typeof initClouds === 'function') {
+        initClouds(canvas);
+    }
+    
     // Clear ripples on resize if environment module is available
     if (typeof clearRipples === 'function') {
         clearRipples();
@@ -39,6 +44,7 @@ function resizeCanvas() {
     if (typeof skyGradientCache !== 'undefined') {
         skyGradientCache.gradient = null;
         skyGradientCache.canvasHeight = null;
+        skyGradientCache.timeOfDay = null;
     }
 }
 
@@ -61,65 +67,19 @@ function draw() {
         gameState.currentEvent = getCurrentEvent();
     }
     
-    // Draw sky based on time of day (use cached gradient if available)
-    const skyHeight = canvas.height * 0.6;
-    
-    // Check if we need to recreate the gradient (time of day or canvas size changed)
-    if (!skyGradientCache.gradient || 
-        skyGradientCache.timeOfDay !== gameState.timeOfDay || 
-        skyGradientCache.canvasHeight !== canvas.height) {
-        
-        skyGradientCache.gradient = ctx.createLinearGradient(0, 0, 0, skyHeight);
-        
-        // Sky colors for different times of day
-        let topColor, bottomColor;
-        switch (gameState.timeOfDay) {
-            case 'morning':
-                topColor = '#ff9a56'; // Orange-pink sunrise
-                bottomColor = '#ffd89b'; // Light orange
-                break;
-            case 'noon':
-                topColor = '#87ceeb'; // Sky blue
-                bottomColor = '#e0f6ff'; // Light blue
-                break;
-            case 'afternoon':
-                topColor = '#ffa500'; // Orange
-                bottomColor = '#ffd700'; // Gold
-                break;
-            case 'night':
-                topColor = '#191970'; // Midnight blue
-                bottomColor = '#000033'; // Very dark blue
-                break;
-            default:
-                topColor = '#4a5568';
-                bottomColor = '#2d3748';
-        }
-        
-        skyGradientCache.gradient.addColorStop(0, topColor);
-        skyGradientCache.gradient.addColorStop(1, bottomColor);
-        skyGradientCache.timeOfDay = gameState.timeOfDay;
-        skyGradientCache.canvasHeight = canvas.height;
-    }
-    
-    ctx.fillStyle = skyGradientCache.gradient;
-    ctx.fillRect(0, 0, canvas.width, skyHeight);
-    
-    if (PERFORMANCE_PROFILING) {
-        performanceStats.skyTime += performance.now() - sectionStart;
-        sectionStart = performance.now();
-    }
-    
-    // Always update frame time for consistent timing (from environment.js)
+    // Calculate deltaTime early for use in animations (clouds, rain, etc.)
     const now = Date.now();
     let lastFrameTime = typeof getLastFrameTime === 'function' ? getLastFrameTime() : now;
     let deltaTime = (now - lastFrameTime) / 16.67; // Normalize to 60fps
     
     // Handle large time gaps (e.g., tab was in background)
-    // If deltaTime is too large, reset particles instead of trying to catch up
     if (deltaTime > 100) {
-        // Tab was paused for a while - reset rain particles to prevent weird behavior
+        // Tab was paused for a while - reset particles to prevent weird behavior
         if (typeof initRainParticles === 'function') {
             initRainParticles(canvas);
+        }
+        if (typeof initClouds === 'function') {
+            initClouds(canvas);
         }
         deltaTime = 1; // Use normal delta for this frame
     } else if (deltaTime < 0) {
@@ -130,6 +90,78 @@ function draw() {
         deltaTime = 1;
     }
     
+    // Store deltaTime globally for use in drawing functions
+    if (typeof window !== 'undefined') {
+        window.deltaTime = deltaTime;
+    }
+    
+    // Draw sky with gradual color transitions based on exact time
+    const skyHeight = canvas.height * 0.6;
+    
+    // Get gradual sky colors based on exact time (not just timeOfDay phase)
+    let topColor, bottomColor;
+    if (typeof getSkyColors === 'function') {
+        const skyColors = getSkyColors();
+        topColor = skyColors.topColor;
+        bottomColor = skyColors.bottomColor;
+    } else {
+        // Fallback to discrete colors if getSkyColors not available
+        switch (gameState.timeOfDay) {
+            case 'morning':
+                topColor = '#ff9a56';
+                bottomColor = '#ffd89b';
+                break;
+            case 'noon':
+                topColor = '#87ceeb';
+                bottomColor = '#e0f6ff';
+                break;
+            case 'afternoon':
+                topColor = '#ffa500';
+                bottomColor = '#ffd700';
+                break;
+            case 'night':
+                topColor = '#191970';
+                bottomColor = '#000033';
+                break;
+            default:
+                topColor = '#4a5568';
+                bottomColor = '#2d3748';
+        }
+    }
+    
+    // Create gradient (recreate every frame for smooth color transitions)
+    const skyGradient = ctx.createLinearGradient(0, 0, 0, skyHeight);
+    skyGradient.addColorStop(0, topColor);
+    skyGradient.addColorStop(1, bottomColor);
+    
+    ctx.fillStyle = skyGradient;
+    ctx.fillRect(0, 0, canvas.width, skyHeight);
+    
+    // Draw sun or moon based on time
+    if (typeof getSunMoonPosition === 'function') {
+        const sunMoonPos = getSunMoonPosition(canvas.width, canvas.height);
+        if (sunMoonPos.isDaytime && sunMoonPos.sunX !== null && sunMoonPos.sunY !== null) {
+            if (typeof drawSun === 'function') {
+                drawSun(sunMoonPos.sunX, sunMoonPos.sunY);
+            }
+        } else if (!sunMoonPos.isDaytime && sunMoonPos.moonX !== null && sunMoonPos.moonY !== null) {
+            if (typeof drawMoon === 'function') {
+                drawMoon(sunMoonPos.moonX, sunMoonPos.moonY);
+            }
+        }
+    }
+    
+    // Draw clouds (after sky but before other elements)
+    if (typeof drawClouds === 'function') {
+        drawClouds();
+    }
+    
+    if (PERFORMANCE_PROFILING) {
+        performanceStats.skyTime += performance.now() - sectionStart;
+        sectionStart = performance.now();
+    }
+    
+    // Update frame time for next frame (from environment.js)
     if (typeof setLastFrameTime === 'function') {
         setLastFrameTime(now);
     }

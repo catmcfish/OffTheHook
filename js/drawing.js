@@ -813,6 +813,179 @@ function drawFishTail(x, y, size, px, bodyColor, darkColor, style) {
 // ENVIRONMENT DRAWING FUNCTIONS
 // ============================================================================
 
+// Draw clouds (8-bit pixelated style)
+function drawClouds() {
+    if (!canvas) return;
+    
+    if (typeof getClouds !== 'function') return;
+    
+    const clouds = getClouds();
+    const px = PIXEL_SIZE;
+    
+    // Get deltaTime from global scope (calculated in rendering.js)
+    const deltaTime = (typeof window !== 'undefined' && window.deltaTime !== undefined) ? window.deltaTime : 1;
+    
+    clouds.forEach(cloud => {
+        // Update cloud position using deltaTime for smooth movement
+        cloud.x += cloud.speed * deltaTime;
+        
+        // Reset cloud position if it goes off-screen
+        if (cloud.x > canvas.width + cloud.size) {
+            cloud.x = -cloud.size;
+            cloud.y = Math.random() * (canvas.height * 0.3) + canvas.height * 0.05;
+        }
+        
+        // Draw cloud in 8-bit pixelated style
+        ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`;
+        
+        // Draw cloud as multiple overlapping circles (pixelated)
+        const cloudParts = [
+            { x: 0, y: 0, size: cloud.size },
+            { x: cloud.size * 0.3, y: -cloud.size * 0.2, size: cloud.size * 0.7 },
+            { x: -cloud.size * 0.3, y: -cloud.size * 0.1, size: cloud.size * 0.6 },
+            { x: cloud.size * 0.6, y: cloud.size * 0.1, size: cloud.size * 0.5 },
+            { x: -cloud.size * 0.5, y: cloud.size * 0.15, size: cloud.size * 0.55 }
+        ];
+        
+        cloudParts.forEach(part => {
+            const centerX = cloud.x + part.x;
+            const centerY = cloud.y + part.y;
+            const radius = part.size / 2;
+            
+            // Draw pixelated circle
+            const startX = Math.floor((centerX - radius) / px) * px;
+            const endX = Math.ceil((centerX + radius) / px) * px;
+            const startY = Math.floor((centerY - radius) / px) * px;
+            const endY = Math.ceil((centerY + radius) / px) * px;
+            
+            for (let pxX = startX; pxX <= endX; pxX += px) {
+                for (let pxY = startY; pxY <= endY; pxY += px) {
+                    const dx = pxX - centerX;
+                    const dy = pxY - centerY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < radius) {
+                        ctx.fillRect(pxX, pxY, px, px);
+                    }
+                }
+            }
+        });
+    });
+}
+
+// Draw sun (8-bit pixelated style)
+function drawSun(x, y) {
+    if (!x || !y) return;
+    
+    const px = PIXEL_SIZE;
+    const sunRadius = 20;
+    
+    // Sun glow effect
+    const glowRadius = sunRadius + 8;
+    const glowOpacity = 0.4;
+    ctx.fillStyle = `rgba(255, 255, 200, ${glowOpacity})`;
+    
+    const glowStartX = Math.floor((x - glowRadius) / px) * px;
+    const glowEndX = Math.ceil((x + glowRadius) / px) * px;
+    const glowStartY = Math.floor((y - glowRadius) / px) * px;
+    const glowEndY = Math.ceil((y + glowRadius) / px) * px;
+    
+    for (let pxX = glowStartX; pxX <= glowEndX; pxX += px) {
+        for (let pxY = glowStartY; pxY <= glowEndY; pxY += px) {
+            const dx = pxX - x;
+            const dy = pxY - y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < glowRadius && dist > sunRadius) {
+                ctx.fillRect(pxX, pxY, px, px);
+            }
+        }
+    }
+    
+    // Sun body - bright yellow
+    ctx.fillStyle = '#ffd700';
+    
+    const sunStartX = Math.floor((x - sunRadius) / px) * px;
+    const sunEndX = Math.ceil((x + sunRadius) / px) * px;
+    const sunStartY = Math.floor((y - sunRadius) / px) * px;
+    const sunEndY = Math.ceil((y + sunRadius) / px) * px;
+    
+    for (let pxX = sunStartX; pxX <= sunEndX; pxX += px) {
+        for (let pxY = sunStartY; pxY <= sunEndY; pxY += px) {
+            const dx = pxX - x;
+            const dy = pxY - y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < sunRadius) {
+                // Add some highlight pixels for 8-bit look
+                if (dist < sunRadius * 0.6) {
+                    ctx.fillStyle = '#ffff00'; // Brighter yellow in center
+                } else {
+                    ctx.fillStyle = '#ffd700'; // Gold on edges
+                }
+                ctx.fillRect(pxX, pxY, px, px);
+            }
+        }
+    }
+}
+
+// Draw moon (8-bit pixelated style)
+function drawMoon(x, y) {
+    if (!x || !y) return;
+    
+    const px = PIXEL_SIZE;
+    const moonRadius = 18;
+    
+    // Moon glow effect (subtle)
+    const glowRadius = moonRadius + 6;
+    const glowOpacity = 0.2;
+    ctx.fillStyle = `rgba(255, 255, 255, ${glowOpacity})`;
+    
+    const glowStartX = Math.floor((x - glowRadius) / px) * px;
+    const glowEndX = Math.ceil((x + glowRadius) / px) * px;
+    const glowStartY = Math.floor((y - glowRadius) / px) * px;
+    const glowEndY = Math.ceil((y + glowRadius) / px) * px;
+    
+    for (let pxX = glowStartX; pxX <= glowEndX; pxX += px) {
+        for (let pxY = glowStartY; pxY <= glowEndY; pxY += px) {
+            const dx = pxX - x;
+            const dy = pxY - y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < glowRadius && dist > moonRadius) {
+                ctx.fillRect(pxX, pxY, px, px);
+            }
+        }
+    }
+    
+    // Moon body - light grey/white
+    ctx.fillStyle = '#e0e0e0';
+    
+    const moonStartX = Math.floor((x - moonRadius) / px) * px;
+    const moonEndX = Math.ceil((x + moonRadius) / px) * px;
+    const moonStartY = Math.floor((y - moonRadius) / px) * px;
+    const moonEndY = Math.ceil((y + moonRadius) / px) * px;
+    
+    for (let pxX = moonStartX; pxX <= moonEndX; pxX += px) {
+        for (let pxY = moonStartY; pxY <= moonEndY; pxY += px) {
+            const dx = pxX - x;
+            const dy = pxY - y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < moonRadius) {
+                // Add some shadow/crater effect for 8-bit look (deterministic based on position)
+                const craterPattern = Math.floor((pxX + pxY * 3) / (px * 2)) % 7;
+                if (dist < moonRadius * 0.7 && craterPattern === 0) {
+                    ctx.fillStyle = '#c0c0c0'; // Slightly darker for craters
+                } else {
+                    ctx.fillStyle = '#e0e0e0'; // Light grey
+                }
+                ctx.fillRect(pxX, pxY, px, px);
+            }
+        }
+    }
+}
+
 // Draw water ripples (uses environment module)
 function drawRipples() {
     if (!canvas) return;
@@ -1102,6 +1275,9 @@ if (typeof window !== 'undefined') {
     window.drawPixelFish = drawPixelFish;
     window.drawFishTail = drawFishTail;
     window.drawRipples = drawRipples;
+    window.drawClouds = drawClouds;
+    window.drawSun = drawSun;
+    window.drawMoon = drawMoon;
     window.renderFishSprite = renderFishSprite;
     window.create8BitIcon = create8BitIcon;
     window.drawBeveledIcon = drawBeveledIcon;
