@@ -74,6 +74,21 @@ router.post('/:username', async (req, res) => {
             userDataUpdate.settings = req.body.settings;
         }
         
+        // Include character customization if provided
+        if (req.body.character) {
+            userDataUpdate.character = req.body.character;
+        }
+        
+        // Include equipment (owned items and equipped items) if provided
+        if (req.body.equipment) {
+            userDataUpdate.equipment = req.body.equipment;
+        }
+        
+        // Include buyback if provided
+        if (req.body.buyback !== undefined) {
+            userDataUpdate.buyback = req.body.buyback;
+        }
+        
         await db.collection('userData').doc(username).set(userDataUpdate, { merge: true });
 
         res.json({ success: true });

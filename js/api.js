@@ -21,6 +21,17 @@ async function saveUserData() {
             })
         });
         
+        // Handle non-OK responses
+        if (!response.ok) {
+            try {
+                const errorResult = await response.json();
+                console.error('Failed to save user data:', errorResult.error || `HTTP ${response.status}`);
+            } catch (e) {
+                console.error(`Failed to save user data: HTTP ${response.status}`);
+            }
+            return;
+        }
+        
         const result = await response.json();
         if (!result.success) {
             console.error('Failed to save user data:', result.error);
@@ -33,6 +44,38 @@ async function saveUserData() {
 async function loadUserData(username) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/user-data/${username}`);
+        
+        // Handle non-OK responses
+        if (!response.ok) {
+            // If 404, user data doesn't exist yet (new user) - this is OK
+            if (response.status === 404) {
+                // Load from localStorage as fallback for new users
+                if (typeof loadSettings === 'function') loadSettings();
+                gameState.isAdmin = false;
+                if (typeof initializeDefaultEquipment === 'function') {
+                    initializeDefaultEquipment();
+                }
+                if (typeof updateSettingsUI === 'function') updateSettingsUI();
+                return;
+            }
+            
+            // For other errors, try to parse JSON error response
+            try {
+                const errorResult = await response.json();
+                console.error('Failed to load user data:', errorResult.error);
+            } catch (e) {
+                console.error(`Failed to load user data: HTTP ${response.status}`);
+            }
+            // Load from localStorage as fallback
+            if (typeof loadSettings === 'function') loadSettings();
+            gameState.isAdmin = false;
+            if (typeof initializeDefaultEquipment === 'function') {
+                initializeDefaultEquipment();
+            }
+            if (typeof updateSettingsUI === 'function') updateSettingsUI();
+            return;
+        }
+        
         const result = await response.json();
         
         if (result.success && result.data) {
@@ -96,6 +139,11 @@ async function loadUserData(username) {
             if (typeof updateBackpack === 'function') updateBackpack();
             if (typeof updateSettingsUI === 'function') updateSettingsUI();
             
+            // Redraw character to show loaded equipment/appearance
+            if (typeof draw === 'function') {
+                draw();
+            }
+            
             // Start admin panel updates if admin
             if (gameState.isAdmin && !gameState.adminPanelInterval) {
                 gameState.adminPanelInterval = setInterval(() => {
@@ -127,15 +175,15 @@ async function loadUserData(username) {
 
 async function register(username, password, passwordConfirm) {
     if (!username || !password) {
-        return { success: false, error: 'Username and password are required' };
+        return { success: false, error: 'Username and password are required', errorCode: 'MISSING_FIELDS' };
     }
     
     if (password !== passwordConfirm) {
-        return { success: false, error: 'Passwords do not match' };
+        return { success: false, error: 'Passwords do not match', errorCode: 'PASSWORD_MISMATCH' };
     }
     
     if (password.length < 6) {
-        return { success: false, error: 'Password must be at least 6 characters' };
+        return { success: false, error: 'Password must be at least 6 characters', errorCode: 'PASSWORD_TOO_SHORT' };
     }
     
     try {
@@ -151,16 +199,73 @@ async function register(username, password, passwordConfirm) {
             })
         });
         
+        // Handle HTTP errors before parsing JSON
+        if (!response.ok) {
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                // If response is not JSON, create error based on status code
+                const statusErrorCodes = {
+                    400: 'BAD_REQUEST',
+                    401: 'UNAUTHORIZED',
+                    403: 'FORBIDDEN',
+                    404: 'ENDPOINT_NOT_FOUND',
+                    500: 'SERVER_ERROR',
+                    503: 'SERVICE_UNAVAILABLE',
+                    504: 'GATEWAY_TIMEOUT'
+                };
+                return {
+                    success: false,
+                    error: `Server error (${response.status}). Please try again.`,
+                    errorCode: statusErrorCodes[response.status] || 'HTTP_ERROR'
+                };
+            }
+            return errorData;
+        }
+        
         const result = await response.json();
         return result;
     } catch (error) {
-        return { success: false, error: 'Network error. Please try again.' };
+        // Detect specific network error types (same as login)
+        let errorCode = 'NETWORK_ERROR';
+        let errorMessage = 'Network error. Please try again.';
+        
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            if (error.message.includes('CORS') || error.message.includes('cross-origin')) {
+                errorCode = 'CORS_ERROR';
+                errorMessage = 'Cross-origin request blocked. Please check server configuration.';
+            } else if (error.message.includes('Failed to fetch')) {
+                errorCode = 'CONNECTION_FAILED';
+                errorMessage = 'Unable to connect to server. Please check your internet connection.';
+            } else {
+                errorCode = 'NETWORK_ERROR';
+                errorMessage = 'Network request failed. Please try again.';
+            }
+        } else if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+            errorCode = 'REQUEST_TIMEOUT';
+            errorMessage = 'Request timed out. Please try again.';
+        } else if (error.name === 'NetworkError') {
+            errorCode = 'NETWORK_ERROR';
+            errorMessage = 'Network error occurred. Please check your connection.';
+        } else if (error.message && error.message.includes('DNS')) {
+            errorCode = 'DNS_ERROR';
+            errorMessage = 'DNS resolution failed. Please check your internet connection.';
+        } else if (error.message && error.message.includes('ECONNREFUSED')) {
+            errorCode = 'CONNECTION_REFUSED';
+            errorMessage = 'Connection refused. Server may be down.';
+        } else if (error.message && error.message.includes('ENOTFOUND')) {
+            errorCode = 'HOST_NOT_FOUND';
+            errorMessage = 'Server host not found. Please check the server URL.';
+        }
+        
+        return { success: false, error: errorMessage, errorCode: errorCode };
     }
 }
 
 async function login(username, password) {
     if (!username || !password) {
-        return { success: false, error: 'Username and password are required' };
+        return { success: false, error: 'Username and password are required', errorCode: 'MISSING_FIELDS' };
     }
     
     try {
@@ -175,6 +280,31 @@ async function login(username, password) {
             })
         });
         
+        // Handle HTTP errors before parsing JSON
+        if (!response.ok) {
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                // If response is not JSON, create error based on status code
+                const statusErrorCodes = {
+                    400: 'BAD_REQUEST',
+                    401: 'INVALID_CREDENTIALS',
+                    403: 'FORBIDDEN',
+                    404: 'ENDPOINT_NOT_FOUND',
+                    500: 'SERVER_ERROR',
+                    503: 'SERVICE_UNAVAILABLE',
+                    504: 'GATEWAY_TIMEOUT'
+                };
+                return {
+                    success: false,
+                    error: `Server error (${response.status}). Please try again.`,
+                    errorCode: statusErrorCodes[response.status] || 'HTTP_ERROR'
+                };
+            }
+            return errorData;
+        }
+        
         const result = await response.json();
         
         if (result.success) {
@@ -184,7 +314,46 @@ async function login(username, password) {
         
         return result;
     } catch (error) {
-        return { success: false, error: 'Network error. Please try again.' };
+        // Detect specific network error types
+        let errorCode = 'NETWORK_ERROR';
+        let errorMessage = 'Network error. Please try again.';
+        
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            // Failed to fetch - could be network down, CORS, or server unreachable
+            if (error.message.includes('CORS') || error.message.includes('cross-origin')) {
+                errorCode = 'CORS_ERROR';
+                errorMessage = 'Cross-origin request blocked. Please check server configuration.';
+            } else if (error.message.includes('Failed to fetch')) {
+                errorCode = 'CONNECTION_FAILED';
+                errorMessage = 'Unable to connect to server. Please check your internet connection.';
+            } else {
+                errorCode = 'NETWORK_ERROR';
+                errorMessage = 'Network request failed. Please try again.';
+            }
+        } else if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+            errorCode = 'REQUEST_TIMEOUT';
+            errorMessage = 'Request timed out. Please try again.';
+        } else if (error.name === 'NetworkError') {
+            errorCode = 'NETWORK_ERROR';
+            errorMessage = 'Network error occurred. Please check your connection.';
+        } else if (error.message && error.message.includes('DNS')) {
+            errorCode = 'DNS_ERROR';
+            errorMessage = 'DNS resolution failed. Please check your internet connection.';
+        } else if (error.message && error.message.includes('ECONNREFUSED')) {
+            errorCode = 'CONNECTION_REFUSED';
+            errorMessage = 'Connection refused. Server may be down.';
+        } else if (error.message && error.message.includes('ENOTFOUND')) {
+            errorCode = 'HOST_NOT_FOUND';
+            errorMessage = 'Server host not found. Please check the server URL.';
+        }
+        
+        console.error('Login network error:', {
+            name: error.name,
+            message: error.message,
+            errorCode: errorCode
+        });
+        
+        return { success: false, error: errorMessage, errorCode: errorCode };
     }
 }
 
@@ -221,6 +390,17 @@ async function checkLeaderboardUpdate(fish) {
             })
         });
         
+        // Handle non-OK responses
+        if (!response.ok) {
+            try {
+                const errorResult = await response.json();
+                console.error('Failed to update leaderboard:', errorResult.error || `HTTP ${response.status}`);
+            } catch (e) {
+                console.error(`Failed to update leaderboard: HTTP ${response.status}`);
+            }
+            return;
+        }
+        
         const result = await response.json();
         if (!result.success) {
             console.error('Failed to update leaderboard:', result.error);
@@ -236,6 +416,19 @@ async function displayLeaderboard() {
     
     try {
         const response = await fetch(`${API_BASE_URL}/api/leaderboard`);
+        
+        // Handle non-OK responses
+        if (!response.ok) {
+            leaderboardList.innerHTML = '<div style="text-align: center; color: #e74c3c; padding: 20px;">Error loading leaderboard</div>';
+            try {
+                const errorResult = await response.json();
+                console.error('Failed to load leaderboard:', errorResult.error || `HTTP ${response.status}`);
+            } catch (e) {
+                console.error(`Failed to load leaderboard: HTTP ${response.status}`);
+            }
+            return;
+        }
+        
         const result = await response.json();
         
         leaderboardList.innerHTML = '';
